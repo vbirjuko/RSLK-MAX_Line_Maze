@@ -20,4 +20,4 @@ To compile this project You must define some symbols:
 <b>COLOR_SENSOR_ON_BACK</b> - if color sensor is placed on robots back. Defines when check deadend color: before turn (if not defined) or after (if defined).
   
 
-And also remove from build and leave one of color_vem6040.c or color tcs34725.c, depending what you have installed.
+And also remove from build and leave one of color_veml6040.c or color tcs34725.c, depending what you have installed.
