@@ -13,4 +13,5 @@ extern const uint8_t IMAGES[][8];
 extern const unsigned char Verdana36x64[12][36][8];
 extern const uint8_t arrow[][32];
 extern const char hextable[16];
+
 #endif /* FONTS_OLED_H_ */

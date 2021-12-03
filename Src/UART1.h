@@ -8,6 +8,7 @@
 #ifndef UART1_H_
 #define UART1_H_
 
+
 void UART1_Init(void);
 char UART1_InChar(void);
 //------------UART1_OutChar------------
@@ -27,5 +28,15 @@ void UART1_OutString(char *pt);
 // Output: none
 // Variable format 1-10 digits with no space before or after
 void UART1_OutUDec(uint32_t n);
+
+#include "UART_drv.h"
+
+extern uart_handle_t bgx_uart;
+
+#define STREAM_PORT     P6
+#define STREAM_PIN      0
+
+#define STREAM_BIT  (BITBAND_PERI(STREAM_PORT->IN, STREAM_PIN))
+
 
 #endif /* UART1_H_ */

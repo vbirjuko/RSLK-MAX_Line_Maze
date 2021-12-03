@@ -67,6 +67,9 @@ uart_handle_t bgx_uart = {
 // Input: none
 // Output: none
 void UART1_Init(void){
+    STREAM_PORT->SEL0   &= ~(1ul << STREAM_PIN);
+    STREAM_PORT->SEL1   &= ~(1ul << STREAM_PIN);
+    STREAM_PORT->DIR    &= ~(1ul << STREAM_PIN);
     UART_drv_Init(&bgx_uart);
     P3->SEL0 |= 0x0C;
     P3->SEL1 &= ~0x0C;          // configure P3.3 and P3.2 as primary module function
