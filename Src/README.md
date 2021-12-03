@@ -17,3 +17,5 @@ To compile this project You must define some symbols:
                 
 <li><b>BLINKER_SEGMENT</b> - what speed is selected running on maze segment. Just for debug purposes.
   
+
+And also remove from build and leave one of color_vem6040.c or color tcs34725.c, depending what you have installed.
