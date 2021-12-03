@@ -17,5 +17,7 @@ To compile this project You must define some symbols:
                 
 <li><b>BLINKER_SEGMENT</b> - what speed is selected running on maze segment. Just for debug purposes.
   
+<b?COLOR_SENSOR_ON_BACK</b> - if color sensor is placed on robots back. Defines time to check deadend color before turn or after.
+  
 
 And also remove from build and leave one of color_vem6040.c or color tcs34725.c, depending what you have installed.
