@@ -9,3 +9,6 @@ Of course, there is some addition necessary, to work:
 4. BGX13 (optional) to get telemetry thru BLE.
 5. On RSLK-MAX board add 1/4 resistor divider to control battery voltage. Using on board "spare" op.amplifier in voltage follower mode.
 6. And some mechanical modifications: install front ball caster too and mount line reflection sensor board in front of this ball caster.
+
+
+There is WiKi, in russian.
