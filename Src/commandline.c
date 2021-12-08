@@ -653,7 +653,7 @@ const Cmd_t Table[]={
 	{"Accelerat",       &put_on_stack, &data.acceleration},
 	{"K*error",         &put_on_stack, &data.k_error},
 	{"K*de/dt",         &put_on_stack, &data.k_diff},
-    {"Kintegral",       &put_on_stack, &data.div_sigma},
+    {"Kintegral",       &put_on_stack, &data.k_integral},
 	{"MotorKprop",      &put_on_stack, &data.motor_Kprop},
 	{"MotorKint",       &put_on_stack, &data.motor_Kint},
 	{"OnWay",           &put_on_stack, &data.on_way},
@@ -804,13 +804,13 @@ void parse_string(instance_t *instance) {
 
 void BlueTooth_parse(void) {
 #ifdef WITH_BGX
-	if (UART1_InStatus()) {
+	if (UART_InStatus(&bgx_uart)) {
 		uint8_t control_char;
 		control_char = UART1_InChar();
 		if (STREAM_BIT) {
 			if (input_command(&BGX_UART1, control_char)) {
 				parse_string(&BGX_UART1);
-				UART1_OutString("\r\nGriever>"); // Echo data back to PC
+				BGX_UART1.UART_OutString("\r\nGriever>"); // Echo data back to PC
 			}
 		}
 	}	

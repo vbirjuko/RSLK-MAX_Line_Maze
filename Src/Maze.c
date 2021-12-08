@@ -146,7 +146,7 @@ void run_segment(speed_t runspeed, unsigned int distance) {
 
             de_dt = data.k_diff*(track_error - prev_track_error);
 
-            sigma_error += (track_error * data.div_sigma) >> 10;
+            sigma_error += (track_error * data.k_integral) >> 10;
             if (sigma_error > 2048) sigma_error = 2048;
             if (sigma_error < -2048) sigma_error = -2048;
 

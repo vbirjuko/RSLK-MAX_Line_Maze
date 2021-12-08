@@ -58,9 +58,12 @@ void ADC0_InitSWTriggerCh21(void){
 
     ADC14->CTL1 = ADC14_CTL1_RES__14BIT;    // 5) ADC14MEM0, 14-bit, ref on, regular power
 
-    ADC14->LO0 = data.low_battery_level * 0x3fff / 100;  // 6.3в - нижний порог батареи
-    ADC14->HI0 = 0x3fff; // 10в - верхний порог батареи (недостижим)
-
+    if (data.low_battery_level * data.volt_calibr < 0x1ffff) {
+        ADC14->LO0 = data.low_battery_level * data.volt_calibr * 0x3fff / 10000;  // 6.3в - нижний порог батареи
+        ADC14->HI0 = 0x3fff; // 10в - верхний порог батареи (недостижим)
+    } else {
+//        assert("ERROR: incorrect values in low_battery_level or/and volt_calibr\r\n");
+    }
 		
 // battery (FB2 P8.4) A21
     P8->SEL1 |= (1u << 4);

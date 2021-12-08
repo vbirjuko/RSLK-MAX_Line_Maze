@@ -13,7 +13,7 @@ typedef struct {
     int acceleration;
     int k_error;
     int k_diff;
-    int div_sigma;
+    int k_integral;
     int on_way;
     int timetorun;
     int lefthand;
