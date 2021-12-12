@@ -12,3 +12,5 @@ Of course, there is some addition necessary, to work:
 
 
 There is WiKi, in russian.
+
+And small video https://youtu.be/V5qwzTzCMWw
