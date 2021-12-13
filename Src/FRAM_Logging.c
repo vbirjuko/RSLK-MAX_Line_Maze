@@ -297,3 +297,34 @@ void FRAM_Read_test(void) {
     else LaunchPad_Output(BLUE);
 }
 */
+
+#include "Motor.h"
+#include "main.h"
+#include "Tachometer.h"
+#include "Reflectance.h"
+#include "ADC.h"
+#include "configure.h"
+
+void FRAM_log_data(void){
+    typedef struct data_buffer {
+        int16_t setspeedLeft;
+        int16_t setspeedRight;
+        int16_t RealSpeedLeft;
+        int16_t RealSpeedRight;
+        int32_t StepsLeft;
+        int32_t StepsRight;
+        uint32_t Time;
+        uint8_t vbat;
+        uint8_t sensors;
+    }data_buffer_t;
+    static data_buffer_t log_buffer;
+
+    log_buffer.StepsLeft    =  LeftSteps;
+    log_buffer.StepsRight   = RightSteps;
+    log_buffer.setspeedLeft  = XstartL;
+    log_buffer.setspeedRight = XstartR;
+    log_buffer.Time         = time;
+    log_buffer.sensors      = current_sensor;
+    log_buffer.vbat         = ((LPF_battery.Sum/LPF_battery.Size) * data.volt_calibr) >> 14;
+    FRAM_log_write((uint8_t *)&log_buffer, (uint8_t *) 0, sizeof(log_buffer));
+}

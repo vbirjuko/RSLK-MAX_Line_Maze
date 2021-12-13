@@ -176,4 +176,6 @@ void Reflectance_Start(void);
 uint8_t Reflectance_End(void);
 
 int line_error(unsigned int first_sensor, unsigned int last_sensor);
+void set_threshold(unsigned int threshold);
+
 #endif /* REFLECTANCE_H_ */

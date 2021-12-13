@@ -314,3 +314,7 @@ int line_error(unsigned int first_sensor, unsigned int last_sensor) {
         return ((W[first_sensor] + W[last_sensor])/2 - 47) + ((photo_array[first_sensor]-(data.threshold >> 3))*94/(photo_array[first_sensor]+photo_array[last_sensor]-((2 * data.threshold) >> 3))) ;
     }
 }
+
+void set_threshold(unsigned int threshold) {
+    Reflectance_Init_with_Timer(threshold);
+}

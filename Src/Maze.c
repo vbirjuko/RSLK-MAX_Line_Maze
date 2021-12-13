@@ -145,17 +145,16 @@ void run_segment(speed_t runspeed, unsigned int distance) {
 // Теперь имеем значение ошибки/смещения и дифференциальное значение ошибки
 
             de_dt = data.k_diff*(track_error - prev_track_error);
+            prev_track_error = track_error;
 
             sigma_error += (track_error * data.k_integral) >> 10;
             if (sigma_error > 2048) sigma_error = 2048;
             if (sigma_error < -2048) sigma_error = -2048;
 
-            prev_track_error = track_error;
-
             result = data.k_error*track_error + de_dt + sigma_error;
 
-            if (result < -14999) result = -14999;
-            else if (result > 14999) result = 14999;
+//            if (result < -data.maxmotor) result = -data.maxmotor;
+//            else if (result > data.maxmotor) result = data.maxmotor;
 
             if (CURRENT_DISTANCE >= slowdistance) {
                 if (maxspeed > data.turnspeed) maxspeed -= data.acceleration;

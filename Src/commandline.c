@@ -19,6 +19,7 @@
 #include "UART1.h"
 #include "SPI_EEProm.h"
 #include "ADC.h"
+#include "Reflectance.h"
 #include "commandline.h"
 #include "crc.h"
 #include "fonts_oled.h"
@@ -499,6 +500,29 @@ void print_row(instance_t *instance, unsigned int addr, unsigned int addrsize, u
     instance->UART_OutString("\r\n");
 }
 
+uint32_t fram_rdsr(instance_t *instance, int * none) {
+    uint8_t status_value;
+    UNUSED(none);
+
+    if (FRAM_rdsr(&status_value)) return 1;
+    if (instance->stack_idx < FORTH_STACK_SIZE - 1) {
+            instance->stack[instance->stack_idx++] = status_value;
+            return 0;
+    } else {
+            return 1;
+    }
+}
+
+uint32_t fram_wrsr(instance_t *instance, int * none) {
+    uint8_t status_value;
+    UNUSED(none);
+
+    if (instance->stack_idx < 1) return 1;
+    status_value = instance->stack[--instance->stack_idx];
+    if (FRAM_wrsr(status_value)) return 1;
+    return 0;
+}
+
 uint32_t dump_fram(instance_t *instance, int * none) {
         uint32_t addr, size,  rowsize, addrsize = 4, ii, mask;
         uint8_t scratchpad[16];
@@ -516,7 +540,7 @@ uint32_t dump_fram(instance_t *instance, int * none) {
 
         if (FRAM_read_Start(addr)) return 1;
         while (size) {
-            if ((rowsize = addr % 16) == 0) rowsize = 16;
+            rowsize = 16 - (addr % 16);
             if (rowsize > size) rowsize = size;
             if (FRAM_log_write(scratchpad, scratchpad, rowsize)) return 1;
             print_row(instance, addr, addrsize, scratchpad, rowsize);
@@ -541,9 +565,9 @@ uint32_t dump_mem(instance_t *instance, int * none) {
         }
 
         while (size) {
-            if ((rowsize = addr % 16) == 0) rowsize = 16;
+            rowsize = 16 - (addr % 16);
             if (rowsize > size) rowsize = size;
-            print_row(instance, addr, addrsize, (uint8_t *)&addr, rowsize);
+            print_row(instance, addr, addrsize, (uint8_t *)addr, rowsize);
             addr += rowsize;
             size -= rowsize;
         }
@@ -607,6 +631,16 @@ uint32_t dump_map(instance_t *instance, int * none)	{
 	return 0;
 }
 
+uint32_t put_threshold(instance_t *instance, int * none) {
+  unsigned int val;
+  UNUSED(none);
+
+  if (instance->stack_idx == 0) return 1;
+  val = instance->stack[--instance->stack_idx];
+  data.threshold = val;
+  set_threshold(val);
+  return 0;
+}
 
 uint32_t search_way(instance_t *instance, int * none) {
     Search_Short_Way_with_turns();
@@ -645,6 +679,7 @@ const Cmd_t Table[]={
 	{"decimal",         &set_base, (int *) 0x0a},
 	{"vbat",			&Battery,	NULL},
 	{"crc",             &crc_calculate, NULL},
+	{"threshold",       &put_threshold, NULL},
 	{"Threshold",       &put_on_stack, &data.threshold},
 	{"MAXspeed",        &put_on_stack, &data.maxspeed},
 	{"MINspeed",        &put_on_stack, &data.minspeed},
@@ -691,6 +726,8 @@ const Cmd_t Table[]={
     {"dump_log_ft",     &dump_log, (int *) 1},
 	{"dump_map",		&dump_map, NULL},
 	{"dump_fram",       &dump_fram, NULL},
+    {"fram_rdsr",       &fram_rdsr, NULL},
+    {"fram_wrsr",       &fram_rdsr, NULL},
     {"show_path",       &show_path, NULL},
     {"list",            &list_values, NULL},
 	{"words",           &list_cmd, NULL},

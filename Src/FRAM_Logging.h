@@ -16,5 +16,6 @@ unsigned int FRAM_log_Stop(void);
 unsigned int FRAM_log_write(uint8_t *wr_data_ptr, uint8_t *rd_data_ptr, unsigned int wr_data_size);
 unsigned int FRAM_rdsr(uint8_t *block_protection);
 unsigned int FRAM_wrsr(uint8_t block_protection);
+void FRAM_log_data(void);
 
 #endif

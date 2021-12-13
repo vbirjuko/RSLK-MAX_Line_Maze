@@ -159,17 +159,15 @@ void Solve_Maze(void)				{
     }
     where_am_i = 0;
     data_log_finish();
-    putstr(1, 7, "Log data saved", 0);
-
+    putstr(0, 6, "Press UP to save", 0);
+    putstr(0, 7,  " map in EEPROM ", 0);
     Motor_Speed(0, 0);
+
     do {
         unsigned int keyb;
         keyb = kbdread();
         if (keyb == KEY_DOWN) break;
         if (keyb == KEY_UP) {
-//          data_ptr = (uint32_t*) &map;
-//          Flash_Erase(0x30000);
-//          Flash_WriteArray(data_ptr, ROM_map_addr, sizeof(map)/4);
             spi_write_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
             break;
         }
@@ -457,10 +455,9 @@ void Explore_Maze(void)	{
 	} 
     where_am_i = 0;
     data_log_finish();
-    putstr(1, 7, "Log data saved", 0);
-
+    putstr(0, 6, "Press UP to save", 0);
+    putstr(0, 7,  " map in EEPROM ", 0);
 	Motor_Speed(0, 0);
-//	data_ptr = (uint32_t*) &data;
 
 	data.crc32 = calc_crc32((uint8_t*)&data, sizeof(data)-4);
 	spi_write_eeprom(EEPROM_COPY_ADDRESS, (uint8_t*) &data, sizeof(data));  // сначала записываем резерв
@@ -470,9 +467,6 @@ void Explore_Maze(void)	{
 		keyb = kbdread();
 		if (keyb == KEY_DOWN) break;
 		if (keyb == KEY_UP) {
-//			data_ptr = (uint32_t*) &map;
-//			Flash_Erase(0x30000);
-//			Flash_WriteArray(data_ptr, ROM_map_addr, sizeof(map)/4);
 			spi_write_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
 			break;
 		}						
