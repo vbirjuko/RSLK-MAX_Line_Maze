@@ -45,7 +45,7 @@ void Motor_PWM (int16_t left, int16_t right) {
 }
 
 Tach_stru_t Left, Right;
-int XstartL  = 0, XstartR = 0;
+volatile int XstartL  = 0, XstartR = 0;
 
 void Controller(void){
 

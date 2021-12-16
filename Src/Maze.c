@@ -395,7 +395,7 @@ void update_coordinate (coordinate_t *current_coordinate, unsigned int length, b
 // In explore mode recorded path will be deleted and robot don't stop in end cell, but record.
 unsigned int solveMaze(unsigned int explore_mode) {
 	unsigned int maze_entrance = 1, available, photo_sensor, step=0, play = 0, i, blind;
-	unsigned int /*loop=0, fork=1, fork_count, mask, */ skip=0, skiplevel, maxspeed;
+	unsigned int skip=0, skiplevel, maxspeed;
 	unsigned int last_index = 0, current_index, count_green, count_yellow, count_red, found_red = 0;
 	unsigned int expect_index = UNKNOWN, turn_index;
 //	uint32_t *data_ptr;
@@ -827,16 +827,16 @@ full_restart:
 //	            speed = data.turnspeed;
 //	        }
 //            Motor_Speed(speed, speed);
-			
 			while ((CURRENT_DISTANCE - start_position) < data.sensor_offset)  {
 			    if (photo_data_ready) {
 			        photo_data_ready = 0;
 			        data_log(where_am_i << 8 | current_sensor, 1);
-		            if (turn_direction != straight) {
-                        speed -= data.acceleration;
-                        if (speed < data.turnspeed) speed = data.turnspeed;
-                        Motor_Speed(speed, speed);
-		            }
+// Возможно, это место где робот делает рывок на перекрёстке.
+//		            if (turn_direction != straight) {
+//                        speed -= data.acceleration;
+//                        if (speed < data.turnspeed) speed = data.turnspeed;
+//                        Motor_Speed(speed, speed);
+//		            }
 			    }
 			}
 
@@ -850,50 +850,52 @@ full_restart:
 			}
 
 #ifdef COLOR_SENSOR_ON_BACK
-            switch (check_color()) {
-                case red:
+			if (turn_direction == back) {
+			    Motor_Speed(0, 0);
+			    switch (check_color()) {
+                    case red:
 #ifdef WITH_BGX
-                    if (STREAM_BIT) {
-                        UART1_OutString("Dead end color: Red\r\n");
-                    }
+                        if (STREAM_BIT) {
+                            UART1_OutString("Dead end color: Red\r\n");
+                        }
 #endif
-                    found_red = current_index;
-                    LaunchPad_Output(RED);
-                    if (explore_mode) break;
-                    map[last_index].node_link[move_direction & TURN_MASK] = current_index;
-                    goto finish;
+                        found_red = current_index;
+                        LaunchPad_Output(RED);
+                        if (explore_mode) break;
+                        map[last_index].node_link[move_direction & TURN_MASK] = current_index;
+                        goto finish;
 
                 // if green we found start position - restart
                 // if green field was start - we never will be here again!
-                case green:
+                    case green:
 #ifdef WITH_BGX
-                    if (STREAM_BIT) {
-                        UART1_OutString("Dead end color: Green\r\n");
-                    }
+                        if (STREAM_BIT) {
+                            UART1_OutString("Dead end color: Green\r\n");
+                        }
 #endif
-                    LaunchPad_Output(GREEN);
-                    if (explore_mode) {
-                        data.green_cell_nr = current_index;
-                        data.pathlength = 0;
-                    } else {
-                        play = 0;
-                        step = 0;
-                        data.pathlength = 0;
-                        move_direction = north;
-                        my_coordinate.east = my_coordinate.north = 0;
-                        goto full_restart;
-                    }
-                // Simply dead end - turn back.
-                default:
+                        LaunchPad_Output(GREEN);
+                        if (explore_mode) {
+                            data.green_cell_nr = current_index;
+                            data.pathlength = 0;
+                        } else {
+                            play = 0;
+                            step = 0;
+                            data.pathlength = 0;
+                            move_direction = north;
+                            my_coordinate.east = my_coordinate.north = 0;
+                            goto full_restart;
+                        }
+                    // Simply dead end - turn back.
+                    default:
 #ifdef WITH_BGX
-                    if (STREAM_BIT) {
-                        UART1_OutString("Dead end color: None\r\n");
-                    }
+                        if (STREAM_BIT) {
+                            UART1_OutString("Dead end color: None\r\n");
+                        }
 #endif
-                    LaunchPad_Output(0);
-                    break;
-            }
-
+                        LaunchPad_Output(0);
+                        break;
+			    }
+			}
 #endif
 
 			move_direction += turn_direction;
@@ -946,19 +948,25 @@ finish:
                     break;
                 }
             }
-        }
 #ifdef COLOR_SENSOR_ON_BACK
-        else {
+        } else {
             segment_length= CURRENT_DISTANCE  - 140; // - data.sensor_offset;
-            Motor_Speed(-data.turnspeed, -data.turnspeed);
+            speed = 0;
+            Motor_Speed(speed, speed);
             while (CURRENT_DISTANCE > segment_length) {
                 if (CollisionFlag) {
                     CollisionFlag = 0;
                     break;
                 }
+                if (photo_data_ready) {
+                    photo_data_ready = 0;
+                    speed -= data.acceleration;
+                    if (speed < -data.turnspeed) speed = -data.turnspeed;
+                    Motor_Speed(speed, speed);
+                }
             }
-        }
 #endif
+        }
 
 save_map:
     Motor_Stop();

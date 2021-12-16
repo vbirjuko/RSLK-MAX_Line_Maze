@@ -142,6 +142,6 @@ void Motor_Speed (int16_t left, int16_t right);
 void Motor_Enable(void);
 void Motor_Disable(void);
 
-extern int XstartL, XstartR;
+extern volatile int XstartL, XstartR;
 
 #endif /* MOTOR_H_ */
