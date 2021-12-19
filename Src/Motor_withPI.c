@@ -2,6 +2,8 @@
 #include "configure.h"
 #include "Tachometer.h"
 #include "Blinker.h"
+#include "CortexM.h"
+
 
 #ifdef RSLK_MAX
 #define LEFT    7
@@ -22,9 +24,6 @@
 #endif
 
 void Motor_PWM (int16_t left, int16_t right) {
-//    SLEEP_PORT->OUT |=  ((1u << LEFT)|(1u << RIGHT));
-//    BITBAND_PERI(DIRECTION_PORT->OUT, DIRECTION_LEFT) = (left < 0) ? 1 : 0;
-//    BITBAND_PERI(DIRECTION_PORT->OUT, DIRECTION_RIGHT) = (right < 0) ? 1 : 0;
     if (left < 0) {
         BITBAND_PERI(DIRECTION_PORT->OUT, DIRECTION_LEFT) = 1;
         TIMER_A0->CCR[4] = -left;
@@ -39,13 +38,10 @@ void Motor_PWM (int16_t left, int16_t right) {
         BITBAND_PERI(DIRECTION_PORT->OUT, DIRECTION_RIGHT) = 0;
         TIMER_A0->CCR[3] = right;
     }
-//
-//    TIMER_A0->CCR[3] = (uint16_t)right;
-//    TIMER_A0->CCR[4] = (uint16_t)left;
 }
 
 Tach_stru_t Left, Right;
-volatile int XstartL  = 0, XstartR = 0;
+volatile int16_t XstartL  = 0, XstartR = 0, RealSpeedL, RealSpeedR;
 
 void Controller(void){
 
@@ -60,6 +56,9 @@ void Controller(void){
 		XprimeR = (Right.Period) ? 200000000/Right.Period : 200000000/65536;
     if (Left.Dir == REVERSE) XprimeL = -XprimeL;
     if (Right.Dir == REVERSE) XprimeR = -XprimeR;
+
+    RealSpeedL = XprimeL;
+    RealSpeedR = XprimeR;
 
     ErrorL = XstartL - XprimeL;
     ErrorR = XstartR - XprimeR;
@@ -175,14 +174,18 @@ void TA0_N_IRQHandler(void){
 }
 
 void Motor_Speed(int16_t left, int16_t right) {
+    DisableInterrupts();
 	XstartL = left;
 	XstartR = right;
+	EnableInterrupts();
 }
 
 // ------------Motor_Stop------------
 void Motor_Stop(void){
+    DisableInterrupts();
 	XstartL = 0;
 	XstartR = 0;
+	EnableInterrupts();
 }
 
 void Motor_Enable(void) {

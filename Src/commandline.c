@@ -704,6 +704,7 @@ const Cmd_t Table[]={
 	{"ColorGreen", 		&put_on_stack, &data.color_green_thr},
 	{"ColorBlue", 		&put_on_stack, &data.color_blue_thr},
 	{"ColorThr", 		&put_on_stack, &data.color_threshold},
+	{"ColorSat",        &put_on_stack, &data.color_saturation},
 	{"DstToleran", 		&put_on_stack, &data.tolerance},
 	{"GuardDist", 		&put_on_stack, &data.guarddist},
 	{"SensorOffs", 		&put_on_stack, &data.sensor_offset},

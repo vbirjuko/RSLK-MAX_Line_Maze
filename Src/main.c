@@ -218,6 +218,7 @@ void Configure(void) {
 		{"Color greenxxxxx", &data.color_green_thr,	    decimal},
 		{"Color blue xxxxx", &data.color_blue_thr,	    decimal},
 		{"Color thre xxxxx", &data.color_threshold,     decimal},
+		{"Color sat  xxxxx", &data.color_saturation,    decimal},
 		{"DstToleran xxxxx", &data.tolerance,			decimal},
 		{"Guard Dist xxxxx", &data.guarddist,			decimal},
 		{"SensorOffs xxxxx", &data.sensor_offset,		decimal},

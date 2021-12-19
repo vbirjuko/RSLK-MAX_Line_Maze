@@ -321,6 +321,8 @@ void FRAM_log_data(void){
 
     log_buffer.StepsLeft    =  LeftSteps;
     log_buffer.StepsRight   = RightSteps;
+    log_buffer.RealSpeedLeft = RealSpeedL;
+    log_buffer.RealSpeedRight = RealSpeedR;
     log_buffer.setspeedLeft  = XstartL;
     log_buffer.setspeedRight = XstartR;
     log_buffer.Time         = time;

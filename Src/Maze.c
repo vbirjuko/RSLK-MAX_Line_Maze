@@ -831,12 +831,12 @@ full_restart:
 			    if (photo_data_ready) {
 			        photo_data_ready = 0;
 			        data_log(where_am_i << 8 | current_sensor, 1);
-// Возможно, это место где робот делает рывок на перекрёстке.
-//		            if (turn_direction != straight) {
-//                        speed -= data.acceleration;
-//                        if (speed < data.turnspeed) speed = data.turnspeed;
-//                        Motor_Speed(speed, speed);
-//		            }
+
+		            if (turn_direction != straight) {
+                        speed -= data.acceleration;
+                        if (speed < data.turnspeed) speed = data.turnspeed;
+                        Motor_Speed(speed, speed);
+		            }
 			    }
 			}
 

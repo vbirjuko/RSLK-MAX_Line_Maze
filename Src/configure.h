@@ -43,6 +43,7 @@ typedef struct {
     int stepcost;
     int p_step;
     int str_accel;
+    int color_saturation;
     uint8_t path[MAX_MAP_SIZE * 2];
     int length[MAX_MAP_SIZE * 2];
     int log_watermark;
