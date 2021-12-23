@@ -394,7 +394,7 @@ void update_coordinate (coordinate_t *current_coordinate, unsigned int length, b
 // When there is recorded path, robot first follow this path.
 // In explore mode recorded path will be deleted and robot don't stop in end cell, but record.
 unsigned int solveMaze(unsigned int explore_mode) {
-	unsigned int maze_entrance = 1, available, photo_sensor, step=0, play = 0, i, blind;
+	unsigned int maze_entrance = 1, available, photo_sensor, step=0, play = 0, ii, blind;
 	unsigned int skip=0, skiplevel, maxspeed;
 	unsigned int last_index = 0, current_index, count_green, count_yellow, count_red, found_red = 0;
 	unsigned int expect_index = UNKNOWN, turn_index;
@@ -429,40 +429,65 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	    }
 	}
 
-full_restart:	
-	max_map_cell = 0;
-	found_red = 0;
-	last_index = 0;
-	maze_entrance = 1;
-	
-	map[0].coordinate.north = my_coordinate.north;
-	map[0].coordinate.east  = my_coordinate.east;
-	map[0].pass_count[0] = 1;
-	map[0].pass_count[1] = 4;
-	map[0].pass_count[2] = 4;
-	map[0].pass_count[3] = 4;
-	map[0].node_link[0] = 0;
-	map[0].node_link[1] = UNKNOWN;
-	map[0].node_link[2] = UNKNOWN;
-	map[0].node_link[3] = UNKNOWN;
-	max_map_cell++;
-	
-	if (explore_mode) {
-		data.pathlength = 0;
-		data.green_cell_nr = 0;
-		play = 0;
-	} else {
-		if (data.pathlength > 0) play = 1;
-	    copy_data_dma(data.path, path, data.pathlength);
-	    copy_data_dma((uint8_t *)data.length, (uint8_t *)length, data.pathlength * 4);
+full_restart:
+    if (explore_mode) {
+        max_map_cell = 0;
+        found_red = 0;
+        last_index = 0;
+        maze_entrance = 1;
+        data.pathlength = 0;
+        data.green_cell_nr = 0;
+        play = 0;
 
-//		for (i=0; i<data.pathlength; i++ ){
-//				path[i] = (rotation_dir_t) data.path[i];
-//				length[i] =  data.length[i];
-//		}
-	}
-//	loop = data.loop;
-	
+        map[0].coordinate.north = my_coordinate.north;
+        map[0].coordinate.east  = my_coordinate.east;
+        map[0].pass_count[0] = 1;
+        map[0].pass_count[1] = 4;
+        map[0].pass_count[2] = 4;
+        map[0].pass_count[3] = 4;
+        map[0].node_link[0] = 0;
+        map[0].node_link[1] = UNKNOWN;
+        map[0].node_link[2] = UNKNOWN;
+        map[0].node_link[3] = UNKNOWN;
+        max_map_cell++;
+    } else {
+        if (data.pathlength > 0) play = 1;
+        copy_data_dma(data.path, path, data.pathlength);
+        copy_data_dma((uint8_t *)data.length, (uint8_t *)length, data.pathlength * 4);
+
+        if ((data.green_cell_nr > data.map_size) || (data.red_cell_nr > data.map_size)) data.map_size = 0;
+        max_map_cell = data.map_size;
+        for (ii = 0; ii < max_map_cell; ii++) {
+            if (map[ii].pass_count[0] < 4) map[ii].pass_count[0] = 0;
+            if (map[ii].pass_count[1] < 4) map[ii].pass_count[1] = 0;
+            if (map[ii].pass_count[2] < 4) map[ii].pass_count[2] = 0;
+            if (map[ii].pass_count[3] < 4) map[ii].pass_count[3] = 0;
+        }
+        if (max_map_cell) {
+            my_coordinate = map[data.green_cell_nr].coordinate;
+            if (map[data.green_cell_nr].node_link[0] == UNKNOWN) map[data.green_cell_nr].pass_count[0] = 4;
+            else {
+                map[data.green_cell_nr].pass_count[0] = 1;
+                move_direction = north;
+            }
+            if (map[data.green_cell_nr].node_link[1] == UNKNOWN) map[data.green_cell_nr].pass_count[1] = 4;
+            else {
+                map[data.green_cell_nr].pass_count[1] = 1;
+                move_direction = east;
+            }
+            if (map[data.green_cell_nr].node_link[2] == UNKNOWN) map[data.green_cell_nr].pass_count[2] = 4;
+            else {
+                map[data.green_cell_nr].pass_count[2] = 1;
+                move_direction = south;
+            }
+            if (map[data.green_cell_nr].node_link[3] == UNKNOWN) map[data.green_cell_nr].pass_count[3] = 4;
+            else {
+                map[data.green_cell_nr].pass_count[3] = 1;
+                move_direction = west;
+            }
+        }
+    }
+
 // Начальный вход в лабиринт: движемся вперед до появления линии
 //	Motor_Speed(data.maxspeed, data.maxspeed);
 // Проезжаем вперед на половину корпуса вслепую
@@ -538,9 +563,9 @@ full_restart:
 				data_log(where_am_i << 8 | current_sensor, 1);
 
 				// проверка условия непрерывности линии
-				for (i=0; i< 8; i++) {
-				    if (prev_stat != (BITBAND_SRAM(photo_sensor, i))) {
-		                if (prev_stat = BITBAND_SRAM(photo_sensor, i) == 1) linecount++;
+				for (ii=0; ii< 8; ii++) {
+				    if (prev_stat != (BITBAND_SRAM(photo_sensor, ii))) {
+		                if (prev_stat = BITBAND_SRAM(photo_sensor, ii) == 1) linecount++;
 				    }
 				}
 				// поворот детектируется только если есть одна непрерывная линия
@@ -562,16 +587,16 @@ full_restart:
 
 //		if (available != (LEFT_MASK | RIGHT_MASK)) { // если поворот, то делаем небольшую задержку
 		if (1) {
-		i=10;
+		ii=10;
 			blind = 0;
-			while (i) {
+			while (ii) {
 //		    while ((CURRENT_DISTANCE - start_position) < LINE_WIDTH) {
 				if (photo_data_ready ) {
 					photo_data_ready  = 0;
 					photo_sensor = current_sensor;
 					if (photo_sensor == 0) blind = 1;
 					data_log(where_am_i << 8 | current_sensor, 1);
-					i--;
+					ii--;
 				}
 			}
 		}
@@ -734,8 +759,8 @@ full_restart:
 				map[current_index].node_link [(move_direction + back) & TURN_MASK] = last_index;
 
 				count_green = 0; count_yellow = 0; count_red = 0;
-				for (i = 0; i < 4; i++) {
-					switch (map[current_index].pass_count[i]) {
+				for (ii = 0; ii < 4; ii++) {
+					switch (map[current_index].pass_count[ii]) {
 						case 0:	count_green++; 	break;
 						case 1: count_yellow++; break;
 						case 2: count_red++;	break;
@@ -863,6 +888,9 @@ full_restart:
                         LaunchPad_Output(RED);
                         if (explore_mode) break;
                         map[last_index].node_link[move_direction & TURN_MASK] = current_index;
+                        path[data.pathlength] = back;
+                        length[data.pathlength] = segment_length;
+                        data.pathlength++;
                         goto finish;
 
                 // if green we found start position - restart
@@ -978,15 +1006,11 @@ save_map:
 //            data.path[i]   = (int) path[i];
 //          data.length[i] =         length[i];
 //    }
-    data.red_cell_nr = found_red;
+    if (found_red) data.red_cell_nr = found_red;
 
+    data.map_size = max_map_cell;
     if (explore_mode) {
-        data.map_size = max_map_cell;
-//			data_ptr = (uint32_t*) &map;
-//			Flash_Erase(0x30000);
-//			Flash_WriteArray(data_ptr, ROM_map_addr, sizeof(map)/4);
         spi_write_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
-
     }
 	return 0;
 }
