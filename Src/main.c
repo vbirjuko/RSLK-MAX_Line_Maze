@@ -196,7 +196,7 @@ void Configure(void) {
 	const menuitem_t menu_item[] = { 
         {"Edit path       ", &edit_path,                execute},
 		{"PathLength xxxxx", &data.pathlength,			decimal},
-		{"Loop Num   xxxxx", &data.loop,				decimal},
+		{"SQinit  hhhhhhhh", &data.sq_init,				hex32},
 		{"RunNumber  xxxxx", &data.runnumber,			decimal},
 		{"Map size   xxxxx", &data.map_size,			decimal},
 		{"StartPoint xxxxx", &data.green_cell_nr,		decimal},

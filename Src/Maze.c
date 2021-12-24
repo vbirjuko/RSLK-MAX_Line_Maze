@@ -1396,9 +1396,14 @@ unsigned int my_position;
 coordinate_t real_coordinate;
 
 void init_virtual_maze(void) {
-    coordinate_t start = {12, 5};
+    coordinate_t start; //
+    start.east = (data.sq_init & 0x0F000) >>12; //{12, 5};
+    start.north= (data.sq_init & 0x00F00) >> 8;
+    unsigned int        maze_width = (data.sq_init & 0x000F0) >> 4;
+    unsigned int        maze_depth = (data.sq_init & 0x0000F) >> 0;
+    bearing_dir_t  start_direction = (bearing_dir_t)((data.sq_init & 0xF0000) >> 16);
     spi_read_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
-    init_maze(15, 7, start, north);
+    init_maze(maze_width, maze_depth, start, start_direction);
 //    draw_maze(start);
 
     my_position = data.green_cell_nr;

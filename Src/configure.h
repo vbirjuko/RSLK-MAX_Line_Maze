@@ -23,7 +23,7 @@ typedef struct {
     int color_blue_thr;
     int color_threshold;
     int pathlength;
-    int loop;
+    int sq_init;
     int tolerance;
     int guarddist;
     int sensor_offset;
