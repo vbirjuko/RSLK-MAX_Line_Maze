@@ -174,10 +174,10 @@ void TA0_N_IRQHandler(void){
 }
 
 void Motor_Speed(int16_t left, int16_t right) {
-    DisableInterrupts();
+    __disable_irq();
 	XstartL = left;
 	XstartR = right;
-	EnableInterrupts();
+	__enable_irq();
 }
 
 // ------------Motor_Stop------------

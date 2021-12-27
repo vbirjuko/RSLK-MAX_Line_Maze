@@ -7,6 +7,7 @@
 
 #include "msp.h"
 #include "driverlib.h"
+#include "FRAM_Logging.h"
 
 typedef struct  {
 	uint8_t 	command[4];
@@ -26,7 +27,7 @@ typedef struct  {
 
 static volatile unsigned int eeprom_write_busy = 0;
 //static volatile uint8_t exchange_buffer[256+4];
-//static volatile uint8_t *spi_buffer_tx_ptr, *spi_buffer_rx_ptr;
+//static uint8_t *volatile spi_buffer_tx_ptr, *volatile spi_buffer_rx_ptr;
 
 void FRAM_Logging_Init(void) {
 	  EUSCI_B0->CTLW0 = 0x0001;             // hold the eUSCI module in reset mode
@@ -69,8 +70,9 @@ void FRAM_Logging_Init(void) {
 
 #define NULL ((void* )0 )
 
-volatile uint8_t *FRAM_send_ptr, *FRAM_recv_ptr;
+uint8_t * volatile FRAM_send_ptr, * volatile FRAM_recv_ptr;
 volatile unsigned int write_in_progress = 0, FRAM_send_count = 0, FRAM_overrun = 0;
+unsigned int frames_to_go = 0;
 
 void EUSCIB0_IRQHandler(void) {
 	switch (EUSCI_B0->IV) {
@@ -144,15 +146,19 @@ unsigned int FRAM_log_write(uint8_t *wr_data_ptr, uint8_t *rd_data_ptr, unsigned
 	return 0;
 }
 
+void FRAM_wait_EOT(void) {
+    while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
+}
+
 unsigned int FRAM_wrsr(uint8_t block_protection) {
-	static uint8_t FRAM_wr_buffer[] = {0x01, 0x00}, FRAM_rd_buffer[2];
+	static uint8_t FRAM_wr_buffer[] = {0x01, 0x00};
 
 	if (BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) == 0) return 1;
 	write_in_progress = 0;
 	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 0;// cs = 0
 	FRAM_wr_buffer[0] = 0x06;
 	FRAM_send_ptr = FRAM_wr_buffer;
-	FRAM_recv_ptr = FRAM_rd_buffer;
+	FRAM_recv_ptr = NULL;
 	FRAM_send_count = 1;
 	EUSCI_B0->IE |= EUSCI_B_IE_TXIE;
 	while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
@@ -161,7 +167,7 @@ unsigned int FRAM_wrsr(uint8_t block_protection) {
 
 
 	FRAM_send_ptr = FRAM_wr_buffer;
-	FRAM_recv_ptr = FRAM_rd_buffer;
+	FRAM_recv_ptr = NULL;
 	FRAM_wr_buffer[1] = block_protection;
 	FRAM_wr_buffer[0] = 0x01;
 	FRAM_send_count = sizeof(FRAM_wr_buffer);
@@ -306,27 +312,19 @@ void FRAM_Read_test(void) {
 #include "configure.h"
 
 void FRAM_log_data(void){
-    typedef struct data_buffer {
-        int16_t setspeedLeft;
-        int16_t setspeedRight;
-        int16_t RealSpeedLeft;
-        int16_t RealSpeedRight;
-        int32_t StepsLeft;
-        int32_t StepsRight;
-        uint32_t Time;
-        uint8_t vbat;
-        uint8_t sensors;
-    }data_buffer_t;
     static data_buffer_t log_buffer;
 
-    log_buffer.StepsLeft    =  LeftSteps;
-    log_buffer.StepsRight   = RightSteps;
-    log_buffer.RealSpeedLeft = RealSpeedL;
-    log_buffer.RealSpeedRight = RealSpeedR;
-    log_buffer.setspeedLeft  = XstartL;
-    log_buffer.setspeedRight = XstartR;
-    log_buffer.Time         = time;
-    log_buffer.sensors      = current_sensor;
-    log_buffer.vbat         = ((LPF_battery.Sum/LPF_battery.Size) * data.volt_calibr) >> 14;
-    FRAM_log_write((uint8_t *)&log_buffer, (uint8_t *) 0, sizeof(log_buffer));
+    if (frames_to_go) {
+        log_buffer.StepsLeft    =  LeftSteps;
+        log_buffer.StepsRight   = RightSteps;
+        log_buffer.RealSpeedLeft = RealSpeedL;
+        log_buffer.RealSpeedRight = RealSpeedR;
+        log_buffer.setspeedLeft  = XstartL;
+        log_buffer.setspeedRight = XstartR;
+        log_buffer.Time         = time;
+        log_buffer.sensors      = current_sensor;
+        log_buffer.vbat         = ((LPF_battery.Sum/LPF_battery.Size) * data.volt_calibr) >> 14;
+        FRAM_log_write((uint8_t *)&log_buffer, (uint8_t *) 0, sizeof(log_buffer));
+        frames_to_go--;
+    }
 }

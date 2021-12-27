@@ -23,6 +23,7 @@
 #include "dma.h"
 #include "Logging.h"
 #include "Timer32.h"
+#include "FRAM_Logging.h"
 
 #ifdef WITH_BGX
 	#include "UART1.h"
@@ -92,6 +93,7 @@ void run_segment(speed_t runspeed, unsigned int distance) {
         if (photo_data_ready ) {
             if (CollisionFlag) return;
             photo_data_ready  = 0;
+            FRAM_log_data();
             data_log(where_am_i << 8 | current_sensor, 1);
             track_error = 0; blind = 1; activ_sensor_count = 0; last_sensor = 256; first_sensor = 256; photo_mask = 0;
 
@@ -164,10 +166,10 @@ void run_segment(speed_t runspeed, unsigned int distance) {
                 Blinker_Output(backlight);
 #endif
             }
-            if ((speed + (ABS(result)*speed)/8192) > data.maxspeed) {
-                speed = data.maxspeed - (ABS(result)*speed)/8192;
-                if (speed < data.minspeed) speed = data.minspeed;
-            }
+//                if ((speed + (ABS(result)*speed)/8192) > data.maxspeed) {
+//                    speed = data.maxspeed - (ABS(result)*speed)/8192;
+//                    if (speed < data.minspeed) speed = data.minspeed;  // ??????????????
+//                }
 
             if ((ABS(result)) < (data.on_way*data.k_error)) {
                 if ((speed += data.acceleration) > maxspeed) speed = maxspeed;
@@ -226,6 +228,7 @@ unsigned int turn(rotation_dir_t dir) {
                 while(count < 2) {
                     if (photo_data_ready ) {
                         photo_data_ready  = 0;
+                        FRAM_log_data();
                         photo_sensor = current_sensor;
                         data_log(where_am_i << 8 | current_sensor, 1);
 
@@ -261,6 +264,7 @@ unsigned int turn(rotation_dir_t dir) {
                 while(count < 2) {
                     if (photo_data_ready ) {
                         photo_data_ready  = 0;
+                        FRAM_log_data();
                         photo_sensor = current_sensor;
                         data_log(where_am_i << 8 | current_sensor, 1);
 
@@ -308,6 +312,7 @@ unsigned int SpeedTurn(rotation_dir_t dir) {
                 Motor_Speed(0, speed);
                 if (photo_data_ready ) {
                     photo_data_ready  = 0;
+                    FRAM_log_data();
                     data_log(where_am_i << 8 | current_sensor, 1);
                 }
                 if (CollisionFlag) return 1;
@@ -320,6 +325,7 @@ unsigned int SpeedTurn(rotation_dir_t dir) {
                 Motor_Speed(speed, 0);
                 if (photo_data_ready ) {
                     photo_data_ready  = 0;
+                    FRAM_log_data();
                     data_log(where_am_i << 8 | current_sensor, 1);
                 }
                 if (CollisionFlag) return 1;
@@ -420,6 +426,7 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	while (CURRENT_DISTANCE < segment_length) {
 	    if (photo_data_ready) {
 	        photo_data_ready = 0;
+	        FRAM_log_data();
 	        data_log(where_am_i << 8 | current_sensor, 1);
 
 	        //				if (speed < data.maxspeed) speed += data.acceleration;
@@ -559,6 +566,7 @@ full_restart:
 			if (photo_data_ready ) {
 			    unsigned int linecount = 0, prev_stat = 0;
 				photo_data_ready  = 0;
+				FRAM_log_data();
 				photo_sensor = current_sensor;
 				data_log(where_am_i << 8 | current_sensor, 1);
 
@@ -593,6 +601,7 @@ full_restart:
 //		    while ((CURRENT_DISTANCE - start_position) < LINE_WIDTH) {
 				if (photo_data_ready ) {
 					photo_data_ready  = 0;
+					FRAM_log_data();
 					photo_sensor = current_sensor;
 					if (photo_sensor == 0) blind = 1;
 					data_log(where_am_i << 8 | current_sensor, 1);
@@ -855,11 +864,11 @@ full_restart:
 			while ((CURRENT_DISTANCE - start_position) < data.sensor_offset)  {
 			    if (photo_data_ready) {
 			        photo_data_ready = 0;
+			        FRAM_log_data();
 			        data_log(where_am_i << 8 | current_sensor, 1);
 
 		            if (turn_direction != straight) {
-                        speed -= data.acceleration;
-                        if (speed < data.turnspeed) speed = data.turnspeed;
+                        if ((speed -= data.acceleration) < data.turnspeed) speed = data.turnspeed;
                         Motor_Speed(speed, speed);
 		            }
 			    }
@@ -975,6 +984,12 @@ finish:
                     CollisionFlag = 0;
                     break;
                 }
+                if (photo_data_ready) {
+                    photo_data_ready = 0;
+                    FRAM_log_data();
+                    if ((speed -= data.acceleration) < data.turnspeed) speed = data.turnspeed;
+                    Motor_Speed(speed, speed);
+                }
             }
 #ifdef COLOR_SENSOR_ON_BACK
         } else {
@@ -988,6 +1003,7 @@ finish:
                 }
                 if (photo_data_ready) {
                     photo_data_ready = 0;
+                    FRAM_log_data();
                     speed -= data.acceleration;
                     if (speed < -data.turnspeed) speed = -data.turnspeed;
                     Motor_Speed(speed, speed);
@@ -1388,6 +1404,11 @@ unsigned int PlayMaze(void) {
 
     return 0;
 }
+
+/* **********************************************************************************
+ * This is necessary for NEXT version of Maze robot, which will run on SQUARE MAZE
+ * Only virtual moving.
+ ************************************************************************************/
 
 #include "square_maze.h"
 

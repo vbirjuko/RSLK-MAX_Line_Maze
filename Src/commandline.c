@@ -247,9 +247,9 @@ uint32_t write_eeprom_config(instance_t *instance, int * none) {
 		data.crc32 = calc_crc32((uint8_t*)&data, sizeof(data)-4);
 		spi_write_eeprom(EEPROM_COPY_ADDRESS, (uint8_t*) &data, sizeof(data));  // сначала записываем резерв
 		spi_write_eeprom(EEPROM_CONFIG_ADDRESS, (uint8_t*) &data, sizeof(data));	// теперь, нормальный вариант.
-		if (FRAM_log_Start(0x30000)) return 1;
-		if (FRAM_log_write((uint8_t*) &data, NULL, sizeof(data))) return 1;
-		if (FRAM_log_Stop()) return 1;
+//		if (FRAM_log_Start(0x30000)) return 1;
+//		if (FRAM_log_write((uint8_t*) &data, NULL, sizeof(data))) return 1;
+//		if (FRAM_log_Stop()) return 1;
     return 0;
 }
 
@@ -550,6 +550,63 @@ uint32_t dump_fram(instance_t *instance, int * none) {
         return FRAM_log_Stop();
 }
 
+uint32_t fram_log_decode (instance_t *instance, int *none) {
+    static data_buffer_t log_buffer;
+    unsigned int record_count = 0, ii, jj, mask;
+
+    if (FRAM_read_Start(0x00000)) return 1;
+    FRAM_wait_EOT();
+    instance->UART_OutChar('.');
+    if (FRAM_log_write((uint8_t*)&record_count, (uint8_t*)&record_count, sizeof(record_count))) return 1;
+    FRAM_wait_EOT();
+    instance->UART_OutString(".\r\n");
+
+    for (ii = 0; ii < record_count; ii++) {
+        if (FRAM_log_write((uint8_t*)&log_buffer, (uint8_t*)&log_buffer, sizeof(log_buffer))) return 1;
+        FRAM_wait_EOT();
+        instance->UART_OutUDec(log_buffer.Time);
+        instance->UART_OutChar(',');
+        mask = 1;
+        for (jj = 0; jj < 8; jj++) {
+            if (log_buffer.sensors & mask) instance->UART_OutChar('#');
+            else                           instance->UART_OutChar(' ');
+            mask <<= 1;
+        }
+        instance->UART_OutChar(',');
+        instance->UART_OutUDec(log_buffer.vbat);
+        instance->UART_OutChar(',');
+        if (log_buffer.setspeedLeft < 0) {
+            log_buffer.setspeedLeft = -log_buffer.setspeedLeft;
+            instance->UART_OutChar('-');
+        }
+        instance->UART_OutUDec(log_buffer.setspeedLeft);
+        instance->UART_OutChar(',');
+        if (log_buffer.setspeedRight < 0) {
+            log_buffer.setspeedRight = -log_buffer.setspeedRight;
+            instance->UART_OutChar('-');
+        }
+        instance->UART_OutUDec(log_buffer.setspeedRight);
+        instance->UART_OutChar(',');
+        if (log_buffer.RealSpeedLeft < 0) {
+            log_buffer.RealSpeedLeft = -log_buffer.RealSpeedLeft;
+            instance->UART_OutChar('-');
+        }
+        instance->UART_OutUDec(log_buffer.RealSpeedLeft);
+        instance->UART_OutChar(',');
+        if (log_buffer.RealSpeedRight < 0) {
+            log_buffer.RealSpeedRight = -log_buffer.RealSpeedRight;
+            instance->UART_OutChar('-');
+        }
+        instance->UART_OutUDec(log_buffer.RealSpeedRight);
+        instance->UART_OutChar(',');
+
+        instance->UART_OutString("\r\n");
+    }
+
+
+    return FRAM_log_Stop();
+}
+
 uint32_t dump_mem(instance_t *instance, int * none) {
         uint32_t addr, size,  rowsize, addrsize = 4, ii, mask;
         UNUSED(none);
@@ -725,10 +782,11 @@ const Cmd_t Table[]={
     {"dump",            &dump_mem,  NULL},
     {"dump_log",        &dump_log, (int *) 0},
     {"dump_log_ft",     &dump_log, (int *) 1},
+    {"fram_log",        &fram_log_decode, NULL},
 	{"dump_map",		&dump_map, NULL},
 	{"dump_fram",       &dump_fram, NULL},
     {"fram_rdsr",       &fram_rdsr, NULL},
-    {"fram_wrsr",       &fram_rdsr, NULL},
+    {"fram_wrsr",       &fram_wrsr, NULL},
     {"show_path",       &show_path, NULL},
     {"list",            &list_values, NULL},
 	{"words",           &list_cmd, NULL},

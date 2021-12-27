@@ -16,7 +16,7 @@
 
 static volatile unsigned int eeprom_write_busy = 0;
 static volatile uint8_t exchange_buffer[256+4];
-volatile uint8_t *spi_buffer_tx_ptr, *spi_buffer_rx_ptr;
+uint8_t *volatile spi_buffer_tx_ptr, *volatile spi_buffer_rx_ptr;
 
 void SPI_EEProm_Init(void) {
 	EUSCI_B3->CTLW0 = EUSCI_B_CTLW0_SWRST; //0x0001;             // hold the eUSCI module in reset mode

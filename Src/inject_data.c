@@ -295,13 +295,15 @@ typedef struct {
     int             map_size;
     int             map_start_cell;
     int             map_end_cell;
+    int             maxX;
+    int             maxY;
     char            map_name[16];
 } alt_data_t;
 
 alt_data_t  inject_map[] = {
-                            {alt_data, sizeof(alt_data)/sizeof(alt_data[0]),                      0, 73, "Sigulda         "},
-                            {injectible_data, sizeof(injectible_data)/sizeof(injectible_data[0]), 0, 42, "Russian         "},
-                            {youtube_data, sizeof(youtube_data)/sizeof(youtube_data[0]),         75, 51, "YouTube         "}
+    {alt_data, sizeof(alt_data)/sizeof(alt_data[0]),                      0, 73, 13, 6, "Sigulda         "},
+    {injectible_data, sizeof(injectible_data)/sizeof(injectible_data[0]), 0, 42, 15, 15, "Russian         "},
+    {youtube_data, sizeof(youtube_data)/sizeof(youtube_data[0]),         75, 51, 13, 7,  "YouTube         "}
 };
 unsigned int inject(unsigned int select) {
 //      data_ptr = (uint32_t*) alt_data;

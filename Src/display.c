@@ -16,7 +16,7 @@
 #include "fonts_oled.h"
 
 unsigned char videobuff[8];
-volatile unsigned char *buffer_ptr; // do not use!!!!!! only for lcdwrite
+//unsigned char * volatile buffer_ptr; // do not use!!!!!! only for lcdwrite
 volatile unsigned int buffer_count = 0;
 
 unsigned char buffer[SSD1306_LCDHEIGHT * SSD1306_LCDWIDTH / 8] = { 
