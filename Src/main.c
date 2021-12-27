@@ -459,7 +459,7 @@ void Explore_Maze(void)	{
     where_am_i = 0;
     data_log_finish();
     FRAM_log_Stop();
-    frames_to_go = 256*1024/22 - frames_to_go;
+    frames_to_go = 256*1024/24 - frames_to_go;
     FRAM_log_Start(0x0000);
     FRAM_log_write((uint8_t*)&frames_to_go, ((void* )0 ), sizeof(frames_to_go));
     FRAM_log_Stop();
