@@ -148,8 +148,10 @@ int main(void){
 	}
 }
 
-void Solve_Maze(void)				{
+void Solve_Maze(void) {
     show_number(data.runnumber, 0);
+    FRAM_log_Start(0x0004);
+    frames_to_go = 256*1024/sizeof(data_buffer_t);
     delay_us(1000000);
     time = 0;
     Motor_Enable();
@@ -158,19 +160,27 @@ void Solve_Maze(void)				{
     }
     where_am_i = 0;
     data_log_finish();
-    putstr(0, 6, "Press UP to save", 0);
-    putstr(0, 7,  " map in EEPROM ", 0);
+    LaunchPad_Output(0);
+    if (FRAM_log_Stop()) LaunchPad_Output(RED);
+    frames_to_go = 256*1024/sizeof(data_buffer_t) - frames_to_go;
+    if (FRAM_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+    if (FRAM_log_write((uint8_t*)&frames_to_go, ((void* )0 ), sizeof(frames_to_go))) LaunchPad_Output(RED|BLUE);
+    if (FRAM_log_Stop()) LaunchPad_Output(BLUE);
+//    putstr(0, 6, "Press UP to save", 0);
+//    putstr(0, 7,  " map in EEPROM ", 0);
+    frames_to_go = 0;
     Motor_Speed(0, 0);
+    while (kbdread() != KEY_DOWN) continue;
 
-    do {
-        unsigned int keyb;
-        keyb = kbdread();
-        if (keyb == KEY_DOWN) break;
-        if (keyb == KEY_UP) {
-            spi_write_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
-            break;
-        }
-    } while(1);
+//    do {
+//        unsigned int keyb;
+//        keyb = kbdread();
+//        if (keyb == KEY_DOWN) break;
+//        if (keyb == KEY_UP) {
+//            spi_write_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
+//            break;
+//        }
+//    } while(1);
     Motor_Disable();
 }
 
@@ -427,7 +437,7 @@ void TestTachom(void)				{
 void Explore_Maze(void)	{
 	show_number(data.runnumber, 0);
 	FRAM_log_Start(0x0004);
-	frames_to_go = 256*1024/24;
+	frames_to_go = 256*1024/sizeof(data_buffer_t);
 	delay_us(1000000);
 	time = 0;
 	Motor_Enable();
@@ -437,26 +447,17 @@ void Explore_Maze(void)	{
     where_am_i = 0;
     data_log_finish();
     FRAM_log_Stop();
-    frames_to_go = 256*1024/24 - frames_to_go;
+    frames_to_go = 256*1024/sizeof(data_buffer_t) - frames_to_go;
     FRAM_log_Start(0x0000);
     FRAM_log_write((uint8_t*)&frames_to_go, ((void* )0 ), sizeof(frames_to_go));
     FRAM_log_Stop();
-    putstr(0, 6, "Press UP to save", 0);
-    putstr(0, 7,  " map in EEPROM ", 0);
+    frames_to_go = 0;
 	Motor_Speed(0, 0);
 
 	data.crc32 = calc_crc32((uint8_t*)&data, sizeof(data)-4);
 	spi_write_eeprom(EEPROM_COPY_ADDRESS, (uint8_t*) &data, sizeof(data));  // сначала записываем резерв
 	spi_write_eeprom(EEPROM_CONFIG_ADDRESS, (uint8_t*) &data, sizeof(data));	// теперь, нормальный вариант.
-	do {
-		unsigned int keyb;
-		keyb = kbdread();
-		if (keyb == KEY_DOWN) break;
-		if (keyb == KEY_UP) {
-			spi_write_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
-			break;
-		}						
-	} while(1);
+    while (kbdread() != KEY_DOWN) continue;
 	Motor_Disable();
 	Search_Short_Way_with_turns();
 }

@@ -18,7 +18,7 @@
         uint32_t Time;              // 4
         uint8_t vbat;
         uint8_t sensors;
-    }data_buffer_t;
+    }  __attribute__((packed)) data_buffer_t;
 
 void FRAM_Logging_Init(void);
 unsigned int FRAM_log_Start(uint32_t FRAM_Addr);
@@ -29,6 +29,6 @@ void FRAM_wait_EOT(void);
 unsigned int FRAM_rdsr(uint8_t *block_protection);
 unsigned int FRAM_wrsr(uint8_t block_protection);
 void FRAM_log_data(void);
-extern unsigned int frames_to_go;
+extern volatile unsigned int frames_to_go;
 
 #endif

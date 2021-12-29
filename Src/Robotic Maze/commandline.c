@@ -167,6 +167,7 @@ uint32_t dump_log(instance_t *instance, int * none) {
                 if (*log_buffer_ptr & STRAIGHT_MASK << 8)   instance->UART_OutChar('S'); else instance->UART_OutChar(' ');
                 if (*log_buffer_ptr & RIGHT_MASK << 8)      instance->UART_OutChar('R'); else instance->UART_OutChar(' ');
                 instance->UART_OutChar(',');
+                if ((*log_buffer_ptr & 0x0700) == (Entrance << 8)) instance->UART_OutString("Entrance");
                 if ((*log_buffer_ptr & 0x0700) == (Solve << 8)) instance->UART_OutString("Solve");
                 if ((*log_buffer_ptr & 0x0700) == (Segment << 8)) instance->UART_OutString("Segment");
                 if ((*log_buffer_ptr & 0x0700) == (Turn << 8)) instance->UART_OutString("Turn");
@@ -599,6 +600,19 @@ uint32_t fram_log_decode (instance_t *instance, int *none) {
         }
         instance->UART_OutUDec(log_buffer.RealSpeedRight);
         instance->UART_OutChar(',');
+
+        if (log_buffer.StepsLeft < 0) {
+            log_buffer.StepsLeft = -log_buffer.StepsLeft;
+            instance->UART_OutChar('-');
+        }
+        instance->UART_OutUDec(log_buffer.StepsLeft);
+        instance->UART_OutChar(',');
+
+        if (log_buffer.StepsRight < 0) {
+            log_buffer.StepsRight = -log_buffer.StepsRight;
+            instance->UART_OutChar('-');
+        }
+        instance->UART_OutUDec(log_buffer.StepsRight);
 
         instance->UART_OutString("\r\n");
     }

@@ -69,8 +69,8 @@ void CollisionHandler(uint8_t bump_data) {
 
 
 // функция движения по сегменту.
-// если задана быстрая скорость, то робот движеся со скоростью maxmotor на участке distance, затем maxspeed.
-// если задана медленная скорость, то весь сегмент движется со скоростью maxspeed.
+// если задана быстрая скорость, то робот движется со скоростью maxspeed на участке distance, затем сбавляет до turnspeed.
+// если задана медленная скорость, то весь сегмент движется со скоростью minspeed.
 // в пределах guarddist игнорируется пропадание линии и срабатывание боковых сенсоров.
 void run_segment(speed_t runspeed, unsigned int distance) {
     unsigned int activ_sensor_count, last_sensor, first_sensor, photo_mask;
@@ -81,14 +81,22 @@ void run_segment(speed_t runspeed, unsigned int distance) {
     old_ret = where_am_i;
     if (where_am_i) where_am_i = Segment;
 
-    if (runspeed == slow) maxspeed = data.minspeed, backlight = BK_LEFT | BK_RGHT;
-    else				  maxspeed = data.maxspeed, backlight = FR_LEFT | FR_RGHT;
+    if (runspeed == slow || runspeed == slow_with_break) maxspeed = data.minspeed, backlight = BK_LEFT | BK_RGHT;
+    else				                                 maxspeed = data.maxspeed, backlight = FR_LEFT | FR_RGHT;
+
+    if (runspeed == fast_with_break || runspeed == slow_with_break) {
+        if (maxspeed >=  data.turnspeed) {
+            // Расстояние, необходимое для торможения: (220mm/100) * (V^2 - v^2) / (2 * a * 400*60)
+            slowdistance = CURRENT_DISTANCE + distance - data.sensor_offset -
+            (maxspeed*maxspeed - data.turnspeed*data.turnspeed)/data.acceleration*11/240000;
+        } else slowdistance = CURRENT_DISTANCE + distance;
+    } else     slowdistance = CURRENT_DISTANCE + distance;
+
 #ifdef BLINKER_SEGMENT
     Blinker_Output(backlight);
 #else
     (void)backlight;
 #endif
-    slowdistance = CURRENT_DISTANCE + distance;
     ignoredistance = CURRENT_DISTANCE + data.guarddist;
 	
     while(1) {
@@ -413,7 +421,7 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	unsigned int max_map_cell = 0;
 	int segment_length, start_position;
 
-	where_am_i = Solve;
+	where_am_i = Entrance;
     data_log_init();
 
 	CollisionFlag = 0;
@@ -430,8 +438,8 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	        photo_data_ready = 0;
 	        FRAM_log_data();
 	        data_log(where_am_i << 8 | current_sensor, 1);
+	        if (current_sensor) break;
 
-	        //				if (speed < data.maxspeed) speed += data.acceleration;
 	        if ((speed += data.acceleration) > maxspeed) speed = maxspeed;
 	        if (speed < 1500) speed = 1500;
 	        Motor_Speed(speed, speed);
@@ -439,6 +447,7 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	}
 
 full_restart:
+    where_am_i = Solve;
     if (explore_mode) {
         max_map_cell = 0;
         found_red = 0;
@@ -524,17 +533,17 @@ full_restart:
 
 		// если выполняем маршрут, то сегмент, после которого не надо делать поворот, проходим
 		// на максимальной скорости, если будет поворот, то часть проходим на максимуме, а за
-		// brake path до конца начинаем тормозить. Если длина такого сегмента меньше чем удвоенный
-		// тормозной путь, то - ничего не получатся.
+		// brake path до конца начинаем тормозить.
 		if (play) {
 			if (path[step] == straight) {
 				run_segment(fast, length[step]);
 			} else {
-				if ((length[step]/2) > data.brake_path) {
-					run_segment(fast, length[step] - data.brake_path);
-				} else {
-					run_segment(fast, length[step]/2);
-				}
+			    run_segment(fast_with_break, length[step]);
+//				if ((length[step]/2) > data.brake_path) {
+//					run_segment(fast, length[step] - data.brake_path);
+//				} else {
+//					run_segment(fast, length[step]/2);
+//				}
 			}
 		} else {
 			run_segment(slow, 0);

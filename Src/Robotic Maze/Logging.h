@@ -17,6 +17,7 @@ enum where {
     Solve = 0x01,               // frame related
     Segment = 0x02,             // frame related
     Turn = 0x03,                // frame related
+    Entrance = 0x04,
     coord_east_lsb = 0x10,
     coord_east_msb = 0x20,
     coord_north_lsb = 0x30,

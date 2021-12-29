@@ -17,13 +17,13 @@ typedef struct  {
 #define FRAM_CS_PORT	P3
 #define FRAM_CS_PIN		0
 
-#define USE_DMA_FOR_SPI
- //configure P10.0 - P10.3 as primary module function
-#define UCB0SOMI		(1u << 3)
-#define UCB0SIMO    (1u << 2)
-#define UCB0CLK     (1u << 1)
-#define UCB0STE     (1u << 0)
-#define NSS					(BITBAND_PERI(P1->OUT, 0))
+//#define USE_DMA_FOR_SPI
+ //configure P1.5 - P1.7 as primary module function
+#define UCB0SOMI	(1u << 5)
+#define UCB0SIMO    (1u << 6)
+#define UCB0CLK     (1u << 7)
+
+#define UCB0NSS					(BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN))
 
 static volatile unsigned int eeprom_write_busy = 0;
 //static volatile uint8_t exchange_buffer[256+4];
@@ -53,8 +53,8 @@ void FRAM_Logging_Init(void) {
 	  EUSCI_A3->BRW = 0x1;
 	      // modulation is not used in SPI mode, so clear UCA3MCTLW
 	  EUSCI_A3->MCTLW = 0;
-	  P1->SEL0 |=  ((1ul << 5)|(1ul << 6)|(1ul << 7)); 	//
-	  P1->SEL1 &= ~((1ul << 5)|(1ul << 6)|(1ul << 7));	// configure P1.7, P1.6, and P1.5 as primary module function
+	  P1->SEL0 |=  (UCB0SOMI|UCB0SIMO|UCB0CLK); 	//
+	  P1->SEL1 &= ~(UCB0SOMI|UCB0SIMO|UCB0CLK);	// configure P1.7, P1.6, and P1.5 as primary module function
 	  FRAM_CS_PORT->SEL0 &= ~(1ul << FRAM_CS_PIN);
 	  FRAM_CS_PORT->SEL1 &= ~(1ul << FRAM_CS_PIN);     			 			// configure P3.0 as GPIO (CS)
 	  FRAM_CS_PORT->DIR  |=  (1ul << FRAM_CS_PIN);
@@ -71,8 +71,7 @@ void FRAM_Logging_Init(void) {
 #define NULL ((void* )0 )
 
 uint8_t * volatile FRAM_send_ptr, * volatile FRAM_recv_ptr;
-volatile unsigned int write_in_progress = 0, FRAM_send_count = 0, FRAM_overrun = 0;
-unsigned int frames_to_go = 0;
+volatile unsigned int write_in_progress = 0, FRAM_send_count = 0, FRAM_overrun = 0, frames_to_go = 0;
 
 void EUSCIB0_IRQHandler(void) {
 	switch (EUSCI_B0->IV) {
@@ -100,7 +99,7 @@ unsigned int FRAM_log_Start(uint32_t FRAM_Addr) {
 	if (BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) == 0) return 1;
 	write_in_progress = 0;
 	FRAM_overrun = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 0;// cs = 0
+	UCB0NSS = 0;// cs = 0
 	FRAM_wr_buffer[0] = 0x06;
 	FRAM_send_ptr = FRAM_wr_buffer;
 	FRAM_recv_ptr = NULL;
@@ -108,7 +107,7 @@ unsigned int FRAM_log_Start(uint32_t FRAM_Addr) {
 	EUSCI_B0->IE |= EUSCI_B_IE_TXIE;
 	while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
 	write_in_progress = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 1;// cs = 1
+	UCB0NSS = 1;// cs = 1
 
 	FRAM_send_ptr = FRAM_wr_buffer;
 	FRAM_recv_ptr = NULL;
@@ -118,7 +117,7 @@ unsigned int FRAM_log_Start(uint32_t FRAM_Addr) {
 	FRAM_wr_buffer[0] = 0x02;
 	FRAM_send_count = sizeof(FRAM_wr_buffer);
 
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 0;// cs = 0
+	UCB0NSS = 0;// cs = 0
 	EUSCI_B0->IE |= EUSCI_B_IE_TXIE;
 	while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
 
@@ -129,7 +128,7 @@ unsigned int FRAM_log_Stop(void) {
 	if (write_in_progress == 0) return 1;
 	while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
 	write_in_progress = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 1;// cs = 1
+	UCB0NSS = 1;// cs = 1
 	return FRAM_overrun;
 }
 
@@ -153,9 +152,9 @@ void FRAM_wait_EOT(void) {
 unsigned int FRAM_wrsr(uint8_t block_protection) {
 	static uint8_t FRAM_wr_buffer[] = {0x01, 0x00};
 
-	if (BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) == 0) return 1;
+	if (UCB0NSS == 0) return 1;
 	write_in_progress = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 0;// cs = 0
+	UCB0NSS = 0;// cs = 0
 	FRAM_wr_buffer[0] = 0x06;
 	FRAM_send_ptr = FRAM_wr_buffer;
 	FRAM_recv_ptr = NULL;
@@ -163,7 +162,7 @@ unsigned int FRAM_wrsr(uint8_t block_protection) {
 	EUSCI_B0->IE |= EUSCI_B_IE_TXIE;
 	while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
 	write_in_progress = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 1;// cs = 1
+	UCB0NSS = 1;// cs = 1
 
 
 	FRAM_send_ptr = FRAM_wr_buffer;
@@ -172,20 +171,20 @@ unsigned int FRAM_wrsr(uint8_t block_protection) {
 	FRAM_wr_buffer[0] = 0x01;
 	FRAM_send_count = sizeof(FRAM_wr_buffer);
 
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 0;// cs = 0
+	UCB0NSS = 0;// cs = 0
 	EUSCI_B0->IE |= EUSCI_B_IE_TXIE;
 	while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
 	write_in_progress = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 1;// cs = 1
+	UCB0NSS = 1;// cs = 1
 	return 0;
 }
 
 unsigned int FRAM_rdsr(uint8_t *block_protection) {
 	static uint8_t FRAM_wr_bp[] = {0x05, 0x00};
 
-	if (BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) == 0) return 1;
+	if (UCB0NSS == 0) return 1;
 	write_in_progress = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 0;// cs = 0
+	UCB0NSS = 0;// cs = 0
 	FRAM_send_ptr = FRAM_wr_bp;
 	FRAM_recv_ptr = FRAM_wr_bp;
 
@@ -195,7 +194,7 @@ unsigned int FRAM_rdsr(uint8_t *block_protection) {
 	EUSCI_B0->IE |= EUSCI_B_IE_TXIE;
 	while (FRAM_send_count || (EUSCI_B0->STATW & EUSCI_B_STATW_SPI_BUSY)) continue;
 	write_in_progress = 0;
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 1;// cs = 1
+	UCB0NSS = 1;// cs = 1
 	*block_protection = FRAM_wr_bp[1];
 	return 0;
 }
@@ -203,7 +202,7 @@ unsigned int FRAM_rdsr(uint8_t *block_protection) {
 unsigned int FRAM_read_Start(uint32_t FRAM_Addr) {
 	static uint8_t FRAM_wr_buffer[] = {0x02, 0x00, 0x00, 0x00};
 
-	if (BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) == 0) return 1;
+	if (UCB0NSS == 0) return 1;
 	write_in_progress = 0;
 
 	FRAM_send_ptr = FRAM_wr_buffer;
@@ -214,7 +213,7 @@ unsigned int FRAM_read_Start(uint32_t FRAM_Addr) {
 	FRAM_wr_buffer[0] = 0x03;
 	FRAM_send_count = sizeof(FRAM_wr_buffer);
 
-	BITBAND_PERI(FRAM_CS_PORT->OUT, FRAM_CS_PIN) = 0;// cs = 0
+	UCB0NSS = 0;// cs = 0
 	EUSCI_B0->IE |= EUSCI_B_IE_TXIE;
 	return 0;
 }
@@ -322,8 +321,8 @@ void FRAM_log_data(void){
         log_buffer.setspeedLeft  = XstartL;
         log_buffer.setspeedRight = XstartR;
         log_buffer.Time         = time;
-        log_buffer.sensors      = current_sensor;
         log_buffer.vbat         = ((LPF_battery.Sum/LPF_battery.Size) * data.volt_calibr) >> 14;
+        log_buffer.sensors      = current_sensor;
         FRAM_log_write((uint8_t *)&log_buffer, (uint8_t *) 0, sizeof(log_buffer));
         frames_to_go--;
     }
