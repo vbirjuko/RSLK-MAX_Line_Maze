@@ -427,7 +427,7 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	CollisionFlag = 0;
 	BumpInt_Init(&CollisionHandler);
 	LaunchPad_Output(GREEN);
-	if (explore_mode)   maxspeed = data.turnspeed;
+	if (explore_mode)   maxspeed = data.minspeed;
 	else                maxspeed = data.maxspeed;
 	
 // Проезжаем вперед на половину корпуса вслепую
