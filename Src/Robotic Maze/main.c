@@ -149,9 +149,10 @@ int main(void){
 }
 
 void Solve_Maze(void) {
+    volatile unsigned int record_count = 0;
     show_number(data.runnumber, 0);
     FRAM_log_Start(0x0004);
-    frames_to_go = 256*1024/sizeof(data_buffer_t);
+    frames_to_go = FRAM_SIZE/sizeof(data_buffer_t);
     delay_us(1000000);
     time = 0;
     Motor_Enable();
@@ -162,9 +163,9 @@ void Solve_Maze(void) {
     data_log_finish();
     LaunchPad_Output(0);
     if (FRAM_log_Stop()) LaunchPad_Output(RED);
-    frames_to_go = 256*1024/sizeof(data_buffer_t) - frames_to_go;
+    record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
     if (FRAM_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
-    if (FRAM_log_write((uint8_t*)&frames_to_go, ((void* )0 ), sizeof(frames_to_go))) LaunchPad_Output(RED|BLUE);
+    if (FRAM_log_write((uint8_t*)&record_count, ((void* )0 ), sizeof(record_count))) LaunchPad_Output(RED|BLUE);
     if (FRAM_log_Stop()) LaunchPad_Output(BLUE);
 //    putstr(0, 6, "Press UP to save", 0);
 //    putstr(0, 7,  " map in EEPROM ", 0);
@@ -435,9 +436,11 @@ void TestTachom(void)				{
 
 
 void Explore_Maze(void)	{
+    volatile unsigned int record_count = 0;
+
 	show_number(data.runnumber, 0);
 	FRAM_log_Start(0x0004);
-	frames_to_go = 256*1024/sizeof(data_buffer_t);
+	frames_to_go = FRAM_SIZE/sizeof(data_buffer_t);
 	delay_us(1000000);
 	time = 0;
 	Motor_Enable();
@@ -447,9 +450,9 @@ void Explore_Maze(void)	{
     where_am_i = 0;
     data_log_finish();
     FRAM_log_Stop();
-    frames_to_go = 256*1024/sizeof(data_buffer_t) - frames_to_go;
+    record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
     FRAM_log_Start(0x0000);
-    FRAM_log_write((uint8_t*)&frames_to_go, ((void* )0 ), sizeof(frames_to_go));
+    FRAM_log_write((uint8_t*)&record_count, ((void* )0 ), sizeof(record_count));
     FRAM_log_Stop();
     frames_to_go = 0;
 	Motor_Speed(0, 0);

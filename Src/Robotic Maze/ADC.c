@@ -1,6 +1,7 @@
 #include "msp.h"
 #include "configure.h"
 #include "ADC.h"
+#include "resources.h"
 #include "driverlib.h"
 
 volatile uint32_t LPF_start = 0;
@@ -88,7 +89,7 @@ void ADC0_InitSWTriggerCh21(void){
 
     LPF_start = 1;
 	
-    NVIC_SetPriority(ADC14_IRQn, 7);
+    NVIC_SetPriority(ADC14_IRQn, ADC14_Priority);
     NVIC_EnableIRQ(ADC14_IRQn);
 }
 

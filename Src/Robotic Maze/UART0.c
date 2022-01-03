@@ -51,7 +51,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include <stdio.h>
 #include "UART0.h"
 #include "msp.h"
-
+#include "resources.h"
 #include "UART_drv.h"
 
 uart_handle_t usb_uart = {
@@ -70,6 +70,7 @@ void UART0_Init(void){
     UART_drv_Init(&usb_uart);
     P1->SEL0 |= 0x0C;
     P1->SEL1 &= ~0x0C;             // configure P1.3 and P1.2 as primary module function
+    NVIC_SetPriority(EUSCIA0_IRQn, EUSCIA0_Priority);
     NVIC_EnableIRQ(EUSCIA0_IRQn);
 }
 

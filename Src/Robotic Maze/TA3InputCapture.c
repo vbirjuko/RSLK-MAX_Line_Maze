@@ -49,6 +49,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 
 #include <stdint.h>
 #include "msp.h"
+#include "resources.h"
 
 void ta3dummy(uint16_t t){};       // dummy function
 void ta3dummy_periodic(void){};       // dummy function
@@ -90,8 +91,8 @@ void TimerA3Capture_Init(void(*task0)(uint16_t time), void(*task2)(uint16_t time
             TIMER_A_CCTLN_SCS | TIMER_A_CCTLN_CAP | TIMER_A_CCTLN_CCIE ;
 #endif
     TIMER_A3->EX0 = TIMER_A_EX0_IDEX__1;  // divide by 1
-    NVIC_SetPriority(TA3_0_IRQn, 1);
-    NVIC_SetPriority(TA3_N_IRQn, 1);
+    NVIC_SetPriority(TA3_0_IRQn, TA3_0_Priority);
+    NVIC_SetPriority(TA3_N_IRQn, TA3_N_Priority);
     NVIC_EnableIRQ(TA3_0_IRQn);
     NVIC_EnableIRQ(TA3_N_IRQn);
     TIMER_A3->CTL = TIMER_A_CTL_SSEL__SMCLK | TIMER_A_CTL_MC__CONTINUOUS | TIMER_A_CTL_CLR | TIMER_A_CTL_IE;

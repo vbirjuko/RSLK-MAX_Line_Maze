@@ -86,7 +86,7 @@ void tachometrInt(void) {
 
 void tachometer_init() {
 	TachLeft.Dir = TachRight.Dir = STOPPED;
-	TachLeft.Period = TachRight.Period = 65535;
+	TachLeft.Period = TachRight.Period = 0x20000;
 #ifdef RSLK_MAX
 	// initialize P5.2 & P5.0 and make it GPIO
   P5->SEL0 	&= ~((1 << 2) | (1 << 0));				// ELB, ERB
@@ -132,8 +132,10 @@ void tachometer_init() {
 // Assumes: Tachometer_Init() has been called
 // Assumes: Clock_Init48MHz() has been called
 void Tachometer_Get(Tach_stru_t *leftTach, Tach_stru_t *rightTach) {
-  *rightTach = TachRight;
-  *leftTach  = TachLeft;
-	EventCountRight = 0;
-	EventCountLeft  = 0;
+    __disable_irq();
+    *rightTach = TachRight;
+    *leftTach  = TachLeft;
+    EventCountRight = 0;
+    EventCountLeft  = 0;
+    __enable_irq();
 }

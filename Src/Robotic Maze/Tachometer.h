@@ -13,7 +13,7 @@ enum TachDirection{
 
 typedef struct {
     uint32_t Period;
-    int     	Steps;
+//    int     	Steps;
     enum  		TachDirection  Dir;
 } Tach_stru_t;
 

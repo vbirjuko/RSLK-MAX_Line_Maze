@@ -8,6 +8,14 @@
 #ifndef FRAM_LOGGING_H
 #define FRAM_LOGGING_H
 
+// Define FRAM size in kilobytes.
+// From this size depends how many records to write.
+// now 22 bytes per record writes 400 times in second gives approx. 30 seconds.
+//If logging is not necessary define as 0.
+#ifndef FRAM_SIZE
+#define FRAM_SIZE   (0)
+#endif
+
     typedef struct data_buffer {
         int16_t setspeedLeft;       // 2
         int16_t setspeedRight;      // 2
@@ -29,6 +37,6 @@ void FRAM_wait_EOT(void);
 unsigned int FRAM_rdsr(uint8_t *block_protection);
 unsigned int FRAM_wrsr(uint8_t block_protection);
 void FRAM_log_data(void);
-extern volatile unsigned int frames_to_go;
+extern unsigned int frames_to_go;
 
 #endif

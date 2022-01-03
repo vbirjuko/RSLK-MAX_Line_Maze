@@ -53,6 +53,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include <stdint.h>
 #include "UART1.h"
 #include "msp.h"
+#include "resources.h"
 #include "UART_drv.h"
 
 uart_handle_t bgx_uart = {
@@ -73,6 +74,7 @@ void UART1_Init(void){
     UART_drv_Init(&bgx_uart);
     P3->SEL0 |= 0x0C;
     P3->SEL1 &= ~0x0C;          // configure P3.3 and P3.2 as primary module function
+    NVIC_SetPriority(EUSCIA2_IRQn, EUSCIA2_Priority);
     NVIC_EnableIRQ(EUSCIA2_IRQn);
 }
 

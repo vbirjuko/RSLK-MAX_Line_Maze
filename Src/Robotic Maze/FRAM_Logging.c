@@ -8,6 +8,7 @@
 #include "msp.h"
 #include "driverlib.h"
 #include "FRAM_Logging.h"
+#include "resources.h"
 
 typedef struct  {
 	uint8_t 	command[4];
@@ -62,7 +63,7 @@ void FRAM_Logging_Init(void) {
 	  EUSCI_B0->CTLW0 &= ~0x0001;           // enable eUSCI module
 	  EUSCI_B0->IE &= ~0x0003;              // disable interrupts
 
-	  NVIC_SetPriority(EUSCIB0_IRQn, 3);
+	  NVIC_SetPriority(EUSCIB0_IRQn, EUSCIB0_Priority);
 	  NVIC_EnableIRQ(EUSCIB0_IRQn);
 
 	  EUSCI_B0->IE = EUSCI_B_IE_RXIE;
@@ -71,7 +72,8 @@ void FRAM_Logging_Init(void) {
 #define NULL ((void* )0 )
 
 uint8_t * volatile FRAM_send_ptr, * volatile FRAM_recv_ptr;
-volatile unsigned int write_in_progress = 0, FRAM_send_count = 0, FRAM_overrun = 0, frames_to_go = 0;
+volatile unsigned int write_in_progress = 0, FRAM_send_count = 0, FRAM_overrun = 0;
+unsigned int frames_to_go = 0;
 
 void EUSCIB0_IRQHandler(void) {
 	switch (EUSCI_B0->IV) {

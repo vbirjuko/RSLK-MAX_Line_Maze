@@ -1,6 +1,7 @@
 #include "msp.h"
 #include "Clock.h"
 #include "i2c_drv.h"
+#include "resources.h"
 #include "Timer32.h"
 
 #define I2C_DEV         EUSCI_B1
@@ -60,6 +61,7 @@ void i2c_master_init(void) {
     I2C_DEV->BRW    = 30; // 12000 kHz / 30 = 400 bps
 
     I2C_DEV->CTLW0 &= ~UCSWRST;
+    NVIC_SetPriority(I2C_IRQn, I2C_Priority);
     NVIC_EnableIRQ(I2C_IRQn);
 }
 

@@ -6,11 +6,13 @@
  */
 #include "msp.h"
 #include "CortexM.h"
+#include "resources.h"
 
 volatile unsigned int timer_busy = 0;
 void Timer32_Init(void) {
     TIMER32_1->CONTROL = TIMER32_CONTROL_MODE | TIMER32_CONTROL_ONESHOT |
             TIMER32_CONTROL_PRESCALE_1 | TIMER32_CONTROL_SIZE | TIMER32_CONTROL_IE;
+    NVIC_SetPriority(T32_INT1_IRQn, T32_INT1_Priority);
     NVIC_EnableIRQ(T32_INT1_IRQn);
 }
 

@@ -45,6 +45,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 
 #include <stdint.h>
 #include "msp.h"
+#include "resources.h"
 
 void dummy(void) {
     return;
@@ -107,9 +108,9 @@ void TimerA1_Init(void(*task0)(void), uint16_t period,
 // interrupts enabled in the main program after all devices initialized
 //  NVIC->IP[3] = (NVIC->IP[3]&0xFFFFFF00)|0x00000040; // priority 2
 //  NVIC->ISER[0] = 0x00001000;   // enable interrupt 12 in NVIC
-  NVIC_SetPriority(TA1_0_IRQn, 2);
-  NVIC_SetPriority(TA2_0_IRQn, 2);
-  NVIC_SetPriority(TA2_N_IRQn, 2);
+  NVIC_SetPriority(TA1_0_IRQn, TA1_0_Priority);
+  NVIC_SetPriority(TA2_0_IRQn, TA2_0_Priority);
+  NVIC_SetPriority(TA2_N_IRQn, TA2_N_Priority);
   NVIC_EnableIRQ(TA1_0_IRQn);
   NVIC_EnableIRQ(TA2_0_IRQn);
   NVIC_EnableIRQ(TA2_N_IRQn);

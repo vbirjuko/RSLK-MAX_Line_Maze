@@ -3,7 +3,7 @@
 #include "Tachometer.h"
 #include "Blinker.h"
 #include "CortexM.h"
-
+#include "resources.h"
 
 #ifdef RSLK_MAX
 #define LEFT    7
@@ -52,8 +52,8 @@ void Controller(void){
 		unsigned int backlight = 0;
 
 		Tachometer_Get(&Left, &Right);
-		XprimeL = (Left.Period)  ? 200000000/Left.Period  : 200000000/65536;
-		XprimeR = (Right.Period) ? 200000000/Right.Period : 200000000/65536;
+		XprimeL = (Left.Period)  ? 200000000/Left.Period  : 200000000/262144;
+		XprimeR = (Right.Period) ? 200000000/Right.Period : 200000000/262144;
     if (Left.Dir == REVERSE) XprimeL = -XprimeL;
     if (Right.Dir == REVERSE) XprimeR = -XprimeR;
 
@@ -130,8 +130,8 @@ void Motor_Init(void){
   // 2 0 TACLR, no clear
   // 1 0 TAIE, no interrupt
   // 0 TAIFG
-  NVIC_SetPriority(TA0_0_IRQn, 3);
-  NVIC_SetPriority(TA0_N_IRQn, 3);
+  NVIC_SetPriority(TA0_0_IRQn, TA0_0_Priority);
+  NVIC_SetPriority(TA0_N_IRQn, TA0_N_Priority);
   NVIC_EnableIRQ(TA0_0_IRQn);
   NVIC_EnableIRQ(TA0_N_IRQn);
 }
@@ -182,10 +182,10 @@ void Motor_Speed(int16_t left, int16_t right) {
 
 // ------------Motor_Stop------------
 void Motor_Stop(void){
-    DisableInterrupts();
+    __disable_irq();
 	XstartL = 0;
 	XstartR = 0;
-	EnableInterrupts();
+    __enable_irq();
 }
 
 void Motor_Enable(void) {

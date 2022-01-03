@@ -49,6 +49,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 // P4.3 Bump2
 // P4.2 Bump1
 // P4.0 Bump0, right side of robot
+#include "resources.h"
 
 #ifdef RSLK_MAX
 #define BUMP0   (1u << 7)
@@ -106,7 +107,7 @@ void BumpInt_Init(void(*task)(uint8_t)){
     P4->IE   |=  BUMP_MASK;     // arm interrupt
 //    NVIC->IP[9] = (NVIC->IP[9]&0xFF00FFFF)|0x00400000; // priority 2
 //    NVIC->ISER[1] = 0x00000040;     // enable interrupt 38 in NVIC
-    NVIC_SetPriority(PORT4_IRQn, 2);
+    NVIC_SetPriority(PORT4_IRQn, PORT4_Priority);
     NVIC_EnableIRQ(PORT4_IRQn);
 }
 
