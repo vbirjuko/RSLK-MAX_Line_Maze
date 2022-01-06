@@ -85,10 +85,21 @@ void run_segment(speed_t runspeed, unsigned int distance) {
     else				                                 maxspeed = data.maxspeed, backlight = FR_LEFT | FR_RGHT;
 
     if (runspeed == fast_with_break || runspeed == slow_with_break) {
-        if (maxspeed >=  data.turnspeed) {
-            // Расстояние, необходимое для торможения: (220mm/100) * (V^2 - v^2) / (2 * a * 400*60)
-            slowdistance = CURRENT_DISTANCE + distance - data.sensor_offset -
-            (maxspeed*maxspeed - data.turnspeed*data.turnspeed)/data.acceleration*11/240000;
+        int brakepath1, brakepath2;
+        if (maxspeed >=  data.minspeed) {
+            // Расстояние, необходимое для торможения, если максимальная скорость не набирается:
+            //  (220mm/100) * (V^2 - v^2) / (4 * a * 400*60)  + distance/2
+            brakepath1 = (speed*speed - data.minspeed*data.minspeed)/data.acceleration * 11/480000 + distance/2;
+            // Расстояние, необходимое для торможения от максимальной скорости:
+            // (220mm/100) * (V^2 - v^2) / (2 * a * 400*60)
+            brakepath2 = (maxspeed*maxspeed - data.minspeed*data.minspeed)/data.acceleration*11/240000;
+            // используем вариант с самым коротким тормозным путём
+            if ((brakepath1 < brakepath2) && (brakepath1 >= 0)) {
+                slowdistance = CURRENT_DISTANCE + distance - data.sensor_offset - brakepath1;
+            } else {
+                slowdistance = CURRENT_DISTANCE + distance - data.sensor_offset - brakepath2;
+            }
+
         } else slowdistance = CURRENT_DISTANCE + distance;
     } else     slowdistance = CURRENT_DISTANCE + distance;
 
@@ -150,6 +161,10 @@ void run_segment(speed_t runspeed, unsigned int distance) {
                     } else {
                         finishcount = 0;		// Если нет повторного - показалось.
                     }
+//// Для ПИД коррекции сужаем аппертуру сенсоров, участвующих в вычислении ошибки позиции
+//// так как к этому времени робот уже должен быть стабилизирован на линии. - нет, что-то не то.
+//                    if (first_sensor < 2) first_sensor = 2;
+//                    if (last_sensor  > 5) last_sensor  = 5;
                 }
                 track_error = line_error(first_sensor, last_sensor);
             }

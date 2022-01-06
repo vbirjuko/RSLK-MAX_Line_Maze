@@ -118,3 +118,9 @@ void ADC14_IRQHandler(void){
 		LPF__Calc(&LPF_right, 	ADC14->MEM[3]);      // 4) return result 0 to 16383
 	}
 }
+
+// Function returns battery voltage with 0.1 volt resolution: 100 ~ 10.0v
+unsigned int get_battery_voltage(void) {
+  return ((LPF_battery.Sum/LPF_battery.Size) * data.volt_calibr) >> 14;
+}
+

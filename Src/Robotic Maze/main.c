@@ -482,9 +482,9 @@ void SearchShortWay() {
     Search_Short_Way_with_turns();
     Draw_Map();
 
-    UART0_OutString("Calculation time: ");
-    UART0_OutUDec(calculation_time);
-    UART0_OutString("/3 us\r\n");
+//    UART0_OutString("Calculation time: ");
+//    UART0_OutUDec(calculation_time);
+//    UART0_OutString("/3 us\r\n");
 
     while(kbdread() != KEY_DOWN) continue;
 }
@@ -495,7 +495,7 @@ void ShowBattery(void) {
 	while(kbdread() != KEY_DOWN) {
 		if (LPF_battery.data_ready) {
 			LPF_battery.data_ready = 0;
-			show_number(((LPF_battery.Sum/LPF_battery.Size) * data.volt_calibr) >> 14, 1);
+			show_number(get_battery_voltage(), 1);
 			if (ADC14->IFGR1 & ADC14_IFGR1_LOIFG) {
 				putstr(3, 7, "Battery Low", 0);
 			}

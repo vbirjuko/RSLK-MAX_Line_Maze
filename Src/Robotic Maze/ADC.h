@@ -19,5 +19,6 @@ extern LPF_t LFP_center, LPF_left, LPF_right, LPF_battery;
 
 void ADC0_InitSWTriggerCh21(void);
 void ADC0_Stop(void);
+unsigned int get_battery_voltage(void);
 
 #endif

@@ -659,7 +659,7 @@ uint32_t Battery(instance_t *instance, int * none) {
 		
 		UNUSED(none);
 		if (instance->stack_idx < FORTH_STACK_SIZE - 1) {
-				instance->stack[instance->stack_idx++] = ((LPF_battery.Sum/LPF_battery.Size) * data.volt_calibr) >> 14;
+				instance->stack[instance->stack_idx++] = get_battery_voltage();
 				return 0;
 		} else {
 				return 1;

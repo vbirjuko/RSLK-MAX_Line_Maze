@@ -16,8 +16,6 @@
 
 volatile Tach_stru_t TachLeft, TachRight;
 
-uint32_t Tachometer_FirstRightTime, Tachometer_SecondRightTime = 0;
-uint32_t Tachometer_FirstLeftTime, Tachometer_SecondLeftTime = 0;
 volatile unsigned int RollOverLeft = 0, RollOverRight = 0;
 volatile uint32_t LeftPeriodInc = 0, RightPeriodInc = 0, EventCountLeft = 0, EventCountRight = 0;
 
@@ -25,8 +23,9 @@ volatile uint32_t LeftPeriodInc = 0, RightPeriodInc = 0, EventCountLeft = 0, Eve
 volatile int LeftSteps = 0, RightSteps = 0;
 
 void tachometerRightInt(uint16_t currenttime){
+    static uint32_t Tachometer_FirstRightTime, Tachometer_SecondRightTime = 0;
 	Tachometer_FirstRightTime = Tachometer_SecondRightTime & 0xFFFF;
-	Tachometer_SecondRightTime = currenttime + ((RollOverRight) ? 0x10000 : 0);
+	Tachometer_SecondRightTime = currenttime + ((RollOverRight) << 16);
 	if(ENC_Right_B){
 		// Encoder B is high, so this is a step forward
 		RightSteps++;
@@ -52,8 +51,9 @@ void tachometerRightInt(uint16_t currenttime){
 }
 
 void tachometerLeftInt(uint16_t currenttime){
+    static uint32_t Tachometer_FirstLeftTime, Tachometer_SecondLeftTime = 0;
     Tachometer_FirstLeftTime = Tachometer_SecondLeftTime & 0xFFFF;
-    Tachometer_SecondLeftTime = currenttime + ((RollOverLeft) ? 0x10000 : 0);
+    Tachometer_SecondLeftTime = currenttime + ((RollOverLeft) << 16);
 		if(ENC_Left_B){
 			// Encoder B is high, so this is a step forward
 			LeftSteps++;
@@ -79,8 +79,8 @@ void tachometerLeftInt(uint16_t currenttime){
 }
 
 void tachometrInt(void) {
-    if (++RollOverLeft  > 1) TachLeft.Dir  = STOPPED;
-    if (++RollOverRight > 1) TachRight.Dir = STOPPED;
+    if (++RollOverLeft  > 3) TachLeft.Dir  = STOPPED;
+    if (++RollOverRight > 3) TachRight.Dir = STOPPED;
 }
 
 

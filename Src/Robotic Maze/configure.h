@@ -63,10 +63,10 @@ typedef struct {
 void edit_path(void);
 void do_menu(menuitem_t* item, unsigned int last_menu_item);
 
-#define EEPROM_COPY_ADDRESS	            0x7F000
-#define EEPROM_CONFIG_ADDRESS           0x00000
-#define ROM_map_addr					0x10000
-#define LOG_ADDRESS						0x20000
-#define LOG_END_ADDRESS                 0x3FFFF
+#define EEPROM_COPY_ADDRESS   0x7F000
+#define EEPROM_CONFIG_ADDRESS 0x00000
+#define ROM_map_addr          0x10000
+#define LOG_ADDRESS           0x20000
+#define LOG_END_ADDRESS       0x3FFFF
 
 #endif
