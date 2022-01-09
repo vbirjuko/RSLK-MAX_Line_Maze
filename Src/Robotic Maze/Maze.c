@@ -460,6 +460,7 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	        Motor_Speed(speed, speed);
 	    }
 	}
+	segment_length = 0;
 
 full_restart:
     where_am_i = Solve;
@@ -497,27 +498,29 @@ full_restart:
             if (map[ii].pass_count[3] < 4) map[ii].pass_count[3] = 0;
         }
         if (max_map_cell) {
+            last_index = data.green_cell_nr;
             my_coordinate = map[data.green_cell_nr].coordinate;
-            if (map[data.green_cell_nr].node_link[0] == UNKNOWN) map[data.green_cell_nr].pass_count[0] = 4;
-            else {
-                map[data.green_cell_nr].pass_count[0] = 1;
-                move_direction = north;
+            for (ii = 0; ii < 4; ii++) {
+                if (map[data.green_cell_nr].pass_count[ii] == 0) {
+                    map[data.green_cell_nr].pass_count[ii] = 1;
+                    move_direction = ii;
+                    break;
+                }
             }
-            if (map[data.green_cell_nr].node_link[1] == UNKNOWN) map[data.green_cell_nr].pass_count[1] = 4;
-            else {
-                map[data.green_cell_nr].pass_count[1] = 1;
-                move_direction = east;
-            }
-            if (map[data.green_cell_nr].node_link[2] == UNKNOWN) map[data.green_cell_nr].pass_count[2] = 4;
-            else {
-                map[data.green_cell_nr].pass_count[2] = 1;
-                move_direction = south;
-            }
-            if (map[data.green_cell_nr].node_link[3] == UNKNOWN) map[data.green_cell_nr].pass_count[3] = 4;
-            else {
-                map[data.green_cell_nr].pass_count[3] = 1;
-                move_direction = west;
-            }
+        } else { // если карта совсем пустая
+            map[0].coordinate.north = my_coordinate.north;
+            map[0].coordinate.east  = my_coordinate.east;
+            map[0].pass_count[0] = 1;
+            map[0].pass_count[1] = 4;
+            map[0].pass_count[2] = 4;
+            map[0].pass_count[3] = 4;
+            map[0].node_link[0] = 0;
+            map[0].node_link[1] = UNKNOWN;
+            map[0].node_link[2] = UNKNOWN;
+            map[0].node_link[3] = UNKNOWN;
+            max_map_cell++;
+            maze_entrance = 1;
+
         }
     }
 
@@ -562,6 +565,7 @@ full_restart:
 			}
 		} else {
 			run_segment(slow, 0);
+//			run_segment(fast_with_break, segment_length);
 		};
 
 		if (CollisionFlag) {
@@ -997,11 +1001,24 @@ full_restart:
 				simplifyPath();
 
 			} else {
-
 				if (step >= data.pathlength) play = 0;
-
 			}
-
+            if (expect_index != UNKNOWN) { // то надо дать знать длину сегмента.
+                switch (move_direction) {
+                case north:
+                    segment_length = map[expect_index].coordinate.north - map[current_index].coordinate.north;
+                    break;
+                case south:
+                    segment_length = map[current_index].coordinate.north - map[expect_index].coordinate.north;
+                    break;
+                case east:
+                    segment_length = map[expect_index].coordinate.east - map[current_index].coordinate.east;
+                    break;
+                case west:
+                    segment_length = map[current_index].coordinate.east - map[expect_index].coordinate.east;
+                    break;
+                }
+            } else segment_length = 0;
     } while (1);
 
 finish:
@@ -1054,8 +1071,8 @@ save_map:
 //    }
     if (found_red) data.red_cell_nr = found_red;
 
-    data.map_size = max_map_cell;
     if (explore_mode) {
+        data.map_size = max_map_cell;
         spi_write_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
     }
 	return 0;

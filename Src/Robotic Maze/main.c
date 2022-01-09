@@ -89,6 +89,8 @@ int main(void){
 	SPI_EEProm_Init();
 
     spi_read_eeprom(EEPROM_CONFIG_ADDRESS, (unsigned char *)&data, sizeof(data));
+    spi_read_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
+
     crc_err = calc_crc32((uint8_t*)&data, sizeof(data));
     if (crc_err){
         LaunchPad_LED(1);
