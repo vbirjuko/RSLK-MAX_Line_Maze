@@ -786,7 +786,7 @@ const Cmd_t Table[]={
 	{"CrossCost", 		&put_on_stack, &data.crosscost},
     {"StepCost",        &put_on_stack, &data.stepcost},
     {"StrAccel",        &put_on_stack, &data.str_accel},
-    {"CellStep",        &put_on_stack, &data.p_step},
+    {"CellStep",        &put_on_stack, &data.cell_step},
     {"Volt_calibr",     &put_on_stack, &data.volt_calibr},
     {"Bat_low_lvl",     &put_on_stack, &data.low_battery_level},
     {"Length_tab",      &put_on_stack,  data.length},

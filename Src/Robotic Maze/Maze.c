@@ -574,6 +574,7 @@ full_restart:
 			update_display();
 			putstr(3, 3, "BUMPER HIT", 1);
 			where_am_i = old_ret;
+			data_log_finish();
 			return 1;
 		}
 		LaunchPad_Output(BLUE);
@@ -622,6 +623,7 @@ full_restart:
 					update_display();
 					putstr(3, 3, "BUMPER HIT", 1);
 					where_am_i = old_ret;
+					data_log_finish();
 					return 1;
 				}
 			}
@@ -793,6 +795,7 @@ full_restart:
 						putstr(strlen+1, 6, number_str, 1);
 						Motor_Stop();
 						where_am_i = old_ret;
+						data_log_finish();
 						return 1;
 					}
 				}
@@ -855,7 +858,7 @@ full_restart:
 //			if (fork_count > 1) fork <<= 1;
 //			if ((loop << 1) & fork) skip = 1;
 
-			turn_index = (data.lefthand < 6) ? data.lefthand : Rand() % 6;
+			turn_index = ((unsigned int)data.lefthand < 6u) ? data.lefthand : Rand() % 6;
 				
 			if (play) {
 			    turn_direction = path[step++];
@@ -914,6 +917,7 @@ full_restart:
 				putstr(3, 3, "I AM LOST", 1);
 				Motor_Stop();
 				where_am_i = old_ret;
+				data_log_finish();
 				return 1;
 			}
 
@@ -994,6 +998,7 @@ full_restart:
 					Motor_Speed(0, 0);
 					speed  = 0;
 					where_am_i = old_ret;
+					data_log_finish();
 					return 1;
 				}
 
@@ -1060,6 +1065,7 @@ finish:
         }
 
 save_map:
+    data_log_finish();
     Motor_Stop();
     BumpInt_Stop();
     where_am_i = old_ret;
@@ -1106,77 +1112,54 @@ void BrakeTest(void) {
 }
 
 void FreeRun(void) {
-	unsigned int travel_length;
-	int stop_difference, turn_angle;
+    unsigned int travel_length;
+    int stop_difference, turn_angle;
 
-	CollisionFlag = 0;
-	BumpInt_Init(&CollisionHandler);
-	time = 0; speed = 0;
-	Motor_Enable();
-//	Motor_Speed(data.maxspeed, data.maxspeed); // 50%
-  while(kbdread() != KEY_DOWN && time < data.timetorun*500) {
+    CollisionFlag = 0;
+    BumpInt_Init(&CollisionHandler);
+    time = 0; speed = 0;
+    Motor_Enable();
+    //	Motor_Speed(data.maxspeed, data.maxspeed); // 50%
+    while(kbdread() != KEY_DOWN && time < data.timetorun*500) {
 
-		if (photo_data_ready) {
-			photo_data_ready = 0;
-//				if (speed < data.maxspeed) speed += data.acceleration;
-			if ((speed += data.acceleration) > data.maxspeed) speed = data.maxspeed;
-			if (speed < 1500) speed = 1500;
-			Motor_Speed(speed, speed);
-		}			
-		
-    if (CollisionFlag) {
+        if (photo_data_ready) {
+            photo_data_ready = 0;
+            //				if (speed < data.maxspeed) speed += data.acceleration;
+            if ((speed += data.acceleration) > data.maxspeed) speed = data.maxspeed;
+            if (speed < 1500) speed = 1500;
+            Motor_Speed(speed, speed);
+        }
 
-			speed = 0;
-			travel_length = CURRENT_DISTANCE  - 100;
-			Motor_Speed(-data.turnspeed, -data.turnspeed);
-			while (CURRENT_DISTANCE > travel_length) continue;
+        if (CollisionFlag) {
 
-			turn_angle = Bump_angle(CollisionData);
-//			show_number(ABS(turn_angle), 0);
-			if (turn_angle < 0) {
-				turn_angle += 90;
-				stop_difference = (RightSteps - LeftSteps) + DEGREE(turn_angle);
-				Motor_Speed(-data.turnspeed, data.turnspeed);
-				while ((RightSteps - LeftSteps) < stop_difference) continue;
-			} else {
-				turn_angle -= 90;
-				stop_difference = (LeftSteps - RightSteps ) - DEGREE(turn_angle);
-				Motor_Speed(data.turnspeed, -data.turnspeed);
-				while ((LeftSteps - RightSteps) < stop_difference) continue;
-			}
+            speed = 0;
+            travel_length = CURRENT_DISTANCE  - 100;
+            Motor_Speed(-data.turnspeed, -data.turnspeed);
+            while (CURRENT_DISTANCE > travel_length) continue;
 
-//			Clock_Delay1ms(400);
-			CollisionData = 0;
-			CollisionFlag = 0;
+            turn_angle = Bump_angle(CollisionData);
+            //			show_number(ABS(turn_angle), 0);
+            if (turn_angle < 0) {
+                turn_angle += 90;
+                stop_difference = (RightSteps - LeftSteps) + DEGREE(turn_angle);
+                Motor_Speed(-data.turnspeed, data.turnspeed);
+                while ((RightSteps - LeftSteps) < stop_difference) continue;
+            } else {
+                turn_angle -= 90;
+                stop_difference = (LeftSteps - RightSteps ) - DEGREE(turn_angle);
+                Motor_Speed(data.turnspeed, -data.turnspeed);
+                while ((LeftSteps - RightSteps) < stop_difference) continue;
+            }
+
+            //			Clock_Delay1ms(400);
+            CollisionData = 0;
+            CollisionFlag = 0;
+        }
     }
-  }
-	Motor_Stop();
-	BumpInt_Stop();
-	Motor_Disable();
+    Motor_Stop();
+    BumpInt_Stop();
+    Motor_Disable();
 }
-
-//unsigned int Remove_DeadEnds(void) {
-//	unsigned int i, j, count, link, direction, removed = 0;
-//
-//	for (i = 1; i < data.map_size; i++) {
-//		if (i != data.red_cell_nr) {
-//			count = 0;
-//			for (j = 0; j < 4; j++) {
-//				if (map[i].node_link[j] == UNKNOWN) count++;
-//				else direction = j, link = map[i].node_link[j];
-//			}
-//			if (count == 3) {
-//				map[i].node_link[direction] = UNKNOWN;
-//				direction += back;
-//				direction &= TURN_MASK;
-//				map[link].node_link[direction] = UNKNOWN;
-//				removed++;
-//			}
-//		}
-//	}
-//	return removed;
-//}
-
 
 
 unsigned int calculation_time;
@@ -1218,11 +1201,12 @@ void Search_Short_Way_with_turns(void) {
 
 	spi_read_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
 
-	// переводим в двухслойную карту
-	// однозначное соответствие: каждый узел делится на два n*2 и (n*2)+1
-	// между ними сегмент длиной стоимостью поворота. К четным узлам примыкают
-	// меридианальные сегменты - север/юг, к нечетным широтные - запад/восток.
-	// каждый из этих сегментов удлиняется на стоимость прямого прохода узла.//
+    // переводим в двухслойную карту
+    // однозначное соответствие: каждый узел делится на два n*2 и (n*2)+1
+    // между ними сегмент длиной стоимостью поворота. К четным узлам примыкают
+    // меридианальные сегменты - север/юг, к нечетным широтные - запад/восток.
+    // каждый из этих сегментов удлиняется на стоимость прямого прохода узла.
+
     benchmark_start();
 #ifdef SLICED_MAP
     for (i = 0; i < data.map_size; i++) {
@@ -1291,7 +1275,7 @@ void Search_Short_Way_with_turns(void) {
         destination = min_index ^ 0x01;
         if (path_length[destination] > (path_length[min_index] + distance)) {
             path_length[destination] = path_length[min_index] + distance;
-            insert_val(path_length[destination], destination);
+            if (insert_val(path_length[destination], destination)) LaunchPad_Output(RED);
         }
     }
 #endif
@@ -1318,9 +1302,9 @@ void Search_Short_Way_with_turns(void) {
 						prev_bearing = bearing;
 						if ((min_index >> 1) != data.green_cell_nr) {
 						    data.pathlength++;
-	                        length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно!!!!!!!!!!!!!
+	                        length[data.pathlength] = distance-data.crosscost;
 						} else {
-	                        length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно!!!!!!!!!!!!!
+	                        length[data.pathlength] = distance-data.crosscost;
 						}
 					}
 					min_index = destination;
@@ -1330,6 +1314,7 @@ void Search_Short_Way_with_turns(void) {
 		}
 	}
 #else
+	// 1 line offset
 	while (path_length[min_index]) {
 	    for (k = 0; k < 3; k++) {
 	        if (k < 2) {
@@ -1346,9 +1331,9 @@ void Search_Short_Way_with_turns(void) {
                         prev_bearing = bearing;
                         if ((min_index >> 1) != data.green_cell_nr) {
                             data.pathlength++;
-                            length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно!!!!!!!!!!!!!
+                            length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно
                         } else {
-                            length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно!!!!!!!!!!!!!
+                            length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно
                         }
                         min_index = destination;
                         break;
@@ -1363,12 +1348,11 @@ void Search_Short_Way_with_turns(void) {
 	    }
 	}
 #endif
-	path[data.pathlength++] = back;//
-    calculation_time = benchmark_stop();
-//	for (i=0; i< data.pathlength; i++) {
-//		data.path[i] = path[i];
-//	}
-	copy_data_dma(path, data.path, data.pathlength);
+
+    path[data.pathlength++] = back;
+    calculation_time= benchmark_stop();
+
+    copy_data_dma(path, data.path, data.pathlength);
 	copy_data_dma((uint8_t *) length, (uint8_t *)data.length, (data.pathlength) * sizeof(length[0]));
 }
 
@@ -1461,22 +1445,23 @@ unsigned int PlayMaze(void) {
 
 bearing_dir_t real_bearing;
 unsigned int my_position;
-coordinate_t real_coordinate;
+//coordinate_t real_coordinate;
 
 void init_virtual_maze(void) {
-    coordinate_t start; //
-    start.east = (data.sq_init & 0x0F000) >>12; //{12, 5};
-    start.north= (data.sq_init & 0x00F00) >> 8;
-    unsigned int        maze_width = (data.sq_init & 0x000F0) >> 4;
-    unsigned int        maze_depth = (data.sq_init & 0x0000F) >> 0;
+    coordinate_t start = { //
+    .east = (data.sq_init & 0x0F000) >>12, //{12, 5};
+    .north= (data.sq_init & 0x00F00) >> 8,
+    };
+    unsigned int        maze_width = ((data.sq_init & 0x000F0) >> 4) + 1;
+    unsigned int        maze_depth = ((data.sq_init & 0x0000F) >> 0) + 1;
     bearing_dir_t  start_direction = (bearing_dir_t)((data.sq_init & 0xF0000) >> 16);
     spi_read_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
     init_maze(maze_width, maze_depth, start, start_direction);
 //    draw_maze(start);
 
     my_position = data.green_cell_nr;
-    real_coordinate = map[my_position].coordinate;
-    real_bearing = north;
+//    real_coordinate = map[my_position].coordinate;
+    real_bearing = north; //(bearing_dir_t)((data.sq_init & 0x0030000) >> 16);
 }
 uint8_t get_walls(void) {
     unsigned int ii, bb = real_bearing,
@@ -1517,10 +1502,10 @@ unsigned int make_step(void) {
             distance = previous_coordinate - map[my_position].coordinate.east;
             break;
     }
-    return (distance + (cell_step/2))/cell_step;;
+    return (distance + (data.cell_step/2))/data.cell_step;;
 }
 
-bearing_dir_t make_turn( turn_direction) {
+bearing_dir_t make_turn(bearing_dir_t turn_direction) {
     real_bearing += turn_direction;
     return (bearing_dir_t) (real_bearing &= TURN_MASK);
 }

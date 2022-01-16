@@ -41,7 +41,7 @@ typedef struct {
     int green_cell_nr;
     int volt_calibr;
     int stepcost;
-    int p_step;
+    int cell_step;
     int str_accel;
     int color_saturation;
     uint8_t path[MAX_MAP_SIZE * 2];

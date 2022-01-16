@@ -53,11 +53,12 @@ enum sides {
     west_wall  = 0x08
 };
 uint8_t maze[MAZE_SIDE * MAZE_SIDE], maxX, maxY;
-coordinate_t start={12, 5}, finish={16, 16};
+coordinate_t start, finish={16, 16};
 bearing_dir_t start_direction=north;
 
 void update_cell_walls(coordinate_t start_cell, bearing_dir_t start_direction, uint8_t start_cell_walls) {
     unsigned int cell_walls;
+
     cell_walls = start_cell_walls << start_direction;
     cell_walls |= (cell_walls << 4) | (cell_walls >> 4);
 
@@ -98,6 +99,9 @@ void init_maze(unsigned int x_size, unsigned int y_size, coordinate_t start_cell
     maxX = x_size;
     maxY = y_size;
     start_direction = start_dir;
+    start.east =  (data.sq_init & 0x00F000) >> 12;
+    start.north = (data.sq_init & 0x000F00) >>  8;
+
 
 #ifndef USE_DMA
     for (ii = 0; ii < MAZE_SIDE*MAZE_SIDE; ii++){
@@ -154,7 +158,7 @@ void draw_maze (coordinate_t cursor, path_t * show_path) {
     const unsigned int table[] = {0, 2, 3, 1};
 
     p_step = 127/maxX;
-    if (p_step > 63/maxY) p_step = 63/maxY;
+    if (p_step > 64/maxY) p_step = 64/maxY;
 
     squareXY(0,0, 127, 63, 0);
     for (ii = 0; ii < maxY; ii++) {
@@ -248,7 +252,7 @@ static rotation_dir_t SelectTurn(unsigned int unavailable_directions) {
 
     unsigned int  i, turn_index;
 
-    turn_index = (data.lefthand < 6) ? data.lefthand : Rand() % 6;
+    turn_index = ((unsigned int)data.lefthand < 6u) ? data.lefthand : Rand() % 6;
 
     if (unavailable_directions != (west_wall | north_wall | east_wall)) {
         for (i = 0; i < 3; i++) {
@@ -351,10 +355,12 @@ void solve_sq_maze(void) {
 //    unsigned int open_cost, close_cost;
     unsigned int my_next_possible_bearing, back_bearing;
     coordinate_t check_coordinate;
-
-    my_coordinate.east = (data.sq_init & 0x0F000) >> 12;
-    my_coordinate.north= (data.sq_init & 0x00F00) >> 8;
-    my_bearing         = (bearing_dir_t)((data.sq_init & 0xF0000) >> 16);
+    start.east =  (data.sq_init & 0x00F000) >> 12;
+    start.north = (data.sq_init & 0x000F00) >>  8;
+    my_coordinate = start;
+//    my_coordinate.east = (data.sq_init & 0x0F000) >> 12;
+//    my_coordinate.north= (data.sq_init & 0x00F00) >> 8;
+    back_bearing = my_bearing = (bearing_dir_t)((data.sq_init & 0xF0000) >> 16);
     fill_data32_dma(0, (uint32_t *)maze_count, 256);
 
     draw_maze(my_coordinate, &global_path);
@@ -365,7 +371,7 @@ void solve_sq_maze(void) {
     do {
         maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][my_bearing] += 1;
         steps = make_step();
-        data.length[data.pathlength] = steps * cell_step;  // до поворота
+        data.length[data.pathlength] = steps * data.cell_step;  // до поворота
         while (steps-- > 1) {
             current_cell_walls = (east_wall | west_wall);
             update_coordinate(&my_coordinate, my_bearing);
@@ -417,7 +423,6 @@ void solve_sq_maze(void) {
             if (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+straight) & TURN_MASK] >= skiplevel) unavailable |= north_wall;
 
             turn_direction = SelectTurn(unavailable);
-            back_bearing = my_bearing;
             my_next_possible_bearing = my_bearing;
             my_next_possible_bearing += turn_direction;
             my_next_possible_bearing &= TURN_MASK;
@@ -428,12 +433,13 @@ void solve_sq_maze(void) {
                 // если возвращаемся назад, то давайте посмотрим, как далеко нужно идти назад.
                 // для этого возвращаемся по сохранённому пути и ищем ячейку у которой есть
                 // зелёый проход (count == 0).
-                unsigned int jj, back_length = 0, back_step;
+                unsigned int jj, /*back_length = 0,*/ back_step;
                 coordinate_t back_trace = my_coordinate;
 
+                back_bearing = my_bearing;
                 do {
-                    back_step = data.length[data.pathlength]/cell_step;
-                    back_length += back_step;
+                    back_step = data.length[data.pathlength]/data.cell_step;
+//                    back_length += back_step;
                     while (back_step--) {
                         maze_count[back_trace.north*MAZE_SIDE+back_trace.east][my_next_possible_bearing] += 1;
                         update_coordinate(&back_trace, (bearing_dir_t)my_next_possible_bearing);
@@ -458,7 +464,9 @@ void solve_sq_maze(void) {
                 LaunchPad_Output(BLUE);
                 search_way_simple(my_coordinate, back_trace, my_bearing, 0);
                 for (ii = 0; ii < *back_path.pathlength; ii++) {
-                    my_bearing = make_turn((rotation_dir_t)back_path.path[ii]);
+                    make_turn((rotation_dir_t)back_path.path[ii]);
+                    my_bearing += back_path.path[ii];
+                    my_bearing &= TURN_MASK;
                     steps = make_step();
                     while (steps-- > 1) {
                         update_coordinate(&my_coordinate, my_bearing);
@@ -474,7 +482,7 @@ void solve_sq_maze(void) {
                     }
                     delay_us(1000000);
                 }
-                my_bearing = make_turn((rotation_dir_t)((back_bearing - my_bearing) & TURN_MASK));
+//                my_bearing = make_turn((rotation_dir_t)((back_bearing - my_bearing) & TURN_MASK));
                 current_cell_walls = get_walls();
             } else {
                 LaunchPad_Output(0);
@@ -483,12 +491,16 @@ void solve_sq_maze(void) {
         } while (1);
 
 
-        my_bearing = make_turn(turn_direction);
-        data.path[data.pathlength] = turn_direction;
-        data.path[data.pathlength] &= TURN_MASK;
+        make_turn(turn_direction);
+        my_bearing += turn_direction;
+        my_bearing &= TURN_MASK;
+
+//        data.path[data.pathlength] = turn_direction;
+        data.path[data.pathlength] = (my_bearing - back_bearing) & TURN_MASK;
         data.pathlength++;
-    // You should check to make sure that the path_length does not
-    // exceed the bounds of the array.
+        back_bearing = my_bearing;
+// You should check to make sure that the path_length does not
+// exceed the bounds of the array.
         if (data.pathlength >= MAX_PATH_LENGTH) {
             squareXY(0,0, 127, 63, 1);
             update_display();
@@ -518,7 +530,9 @@ void solve_sq_maze(void) {
         delay_us(1000000);
         search_way_simple(my_coordinate, check_coordinate, my_bearing, 0);
         for (ii = 0; ii < *back_path.pathlength; ii++) {
-            my_bearing = make_turn((rotation_dir_t)back_path.path[ii]);
+            make_turn((rotation_dir_t)back_path.path[ii]);
+            my_bearing +=  back_path.path[ii];
+            my_bearing &= TURN_MASK;
             steps = make_step();
             while (steps--) {
                 update_coordinate(&my_coordinate, my_bearing);
@@ -537,7 +551,9 @@ void solve_sq_maze(void) {
     } while (1);
     search_way_simple(my_coordinate, start, my_bearing, 0);
     for (ii = 0; ii < *back_path.pathlength; ii++) {
-        my_bearing = make_turn((rotation_dir_t)back_path.path[ii]);
+        make_turn((rotation_dir_t)back_path.path[ii]);
+        my_bearing +=  back_path.path[ii];
+        my_bearing &= TURN_MASK;
         steps = make_step();
         while (steps--) {
             update_coordinate(&my_coordinate, my_bearing);
@@ -558,6 +574,7 @@ void solve_sq_maze(void) {
     data.pathlength = backpath_size-1;
     while(dma_copy_busy) WaitForInterrupt();
     draw_maze(my_coordinate, &global_path);
+    LaunchPad_Output(GREEN);
     return;
 }
 
@@ -566,7 +583,7 @@ void solve_sq_maze(void) {
  */
 #define SORTED_QUEUE
 
-#define QUEUE_FACTOR  6
+#define QUEUE_FACTOR  8
 #define QUEUE_SIZE  (1 << QUEUE_FACTOR)
 #define QUEUE_MASK  (QUEUE_SIZE - 1)
 
@@ -598,7 +615,8 @@ static unsigned int extract_val(void) {
 unsigned int floodqueue[QUEUE_SIZE], queue_wr = 0, queue_rd = 0;
 #endif
 
-const unsigned int cost_table[] = {0, 424, 749, 1024, 1265, 1484, 1685, 1872, 2048, 2214, 2372, 2523, 2668, 2807, 2941, 3072, 3198};
+//const unsigned int cost_table[] = {0, 424, 749, 1024, 1265, 1484, 1685, 1872, 2048, 2214, 2372, 2523, 2668, 2807, 2941, 3072, 3198};
+const unsigned int cost_table[] = {0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500, 4800};
 
 
 unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
@@ -633,8 +651,8 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
     while (dma_copy_busy) WaitForInterrupt();
     flood[pos_idx] = distance;
     flood[pos_idx+1] = distance;
-    insert_val(distance, pos_idx);
-    insert_val(distance, pos_idx+1);
+    if (insert_val(distance, pos_idx)) LaunchPad_Output(RED);
+    if (insert_val(distance, pos_idx+1)) LaunchPad_Output(RED);
 
     while(sort_tail) {
         pos_idx = extract_val();
@@ -648,7 +666,7 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
             distance = flood[pos_idx]+cost_table[next_virtual_cell];
             while (((maze[(pos_idx+2*(next_virtual_cell-1))/2] & wall.east) == 0) && (flood[(pos_idx+2*next_virtual_cell)] > distance)) {
                 flood[(pos_idx+2*next_virtual_cell)] = distance;
-                insert_val(distance, pos_idx + 2*next_virtual_cell);
+                if (insert_val(distance, pos_idx + 2*next_virtual_cell)) LaunchPad_Output(RED);
                 next_virtual_cell++;
                 distance = flood[pos_idx]+cost_table[next_virtual_cell];
             }
@@ -656,7 +674,7 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
             distance = flood[pos_idx]+cost_table[next_virtual_cell];
             while (((maze[(pos_idx-2*(next_virtual_cell-1))/2] & wall.west) == 0) && (flood[(pos_idx-2*next_virtual_cell)] > distance)) {
                 flood[(pos_idx-2*next_virtual_cell)] = distance;
-                insert_val(distance, pos_idx - 2*next_virtual_cell);
+                if (insert_val(distance, pos_idx - 2*next_virtual_cell)) LaunchPad_Output(RED);
                 next_virtual_cell++;
                 distance = flood[pos_idx]+cost_table[next_virtual_cell];
             }
@@ -665,7 +683,7 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
             distance = flood[pos_idx]+cost_table[next_virtual_cell];
             while (((maze[(pos_idx + MAZE_SIDE*2*(next_virtual_cell-1))/2] & wall.north) == 0) && (flood[pos_idx + MAZE_SIDE*2*next_virtual_cell] > distance)) {
                 flood[pos_idx + MAZE_SIDE*2*next_virtual_cell] = distance;
-                insert_val(distance, pos_idx + MAZE_SIDE*2*next_virtual_cell);
+                if (insert_val(distance, pos_idx + MAZE_SIDE*2*next_virtual_cell)) LaunchPad_Output(RED);
                 next_virtual_cell++;
                 distance = flood[pos_idx]+cost_table[next_virtual_cell];
             }
@@ -673,7 +691,7 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
             distance = flood[pos_idx]+cost_table[next_virtual_cell];
             while (((maze[(pos_idx - MAZE_SIDE*2*(next_virtual_cell-1))/2] & wall.south) == 0) && (flood[pos_idx - MAZE_SIDE*2*next_virtual_cell] > distance)) {
                 flood[pos_idx - MAZE_SIDE*2*next_virtual_cell] = distance;
-                insert_val(distance, pos_idx - MAZE_SIDE*2*next_virtual_cell);
+                if (insert_val(distance, pos_idx - MAZE_SIDE*2*next_virtual_cell)) LaunchPad_Output(RED);
                 next_virtual_cell++;
                 distance = flood[pos_idx]+cost_table[next_virtual_cell];
             }
@@ -681,7 +699,7 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
         distance = flood[pos_idx]+data.turncost;
         if (flood[pos_idx ^ 0x01] > distance) {
             flood[pos_idx ^ 0x01] = distance;
-            insert_val(distance, pos_idx ^ 0x01);
+            if (insert_val(distance, pos_idx ^ 0x01)) LaunchPad_Output(RED);
         }
     }
 
@@ -727,7 +745,7 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
         } else { // north or south
 //            north:
             next_virtual_cell = 0;
-            while ((pos_idx/2+MAZE_SIDE*(next_virtual_cell) < MAZE_SIDE*(MAZE_SIDE - 1)) && ((maze[pos_idx/2+MAZE_SIDE*(next_virtual_cell)] & wall.north) == 0)) {
+            while ((pos_idx/2+MAZE_SIDE*(next_virtual_cell) <= MAZE_SIDE*(MAZE_SIDE - 1)) && ((maze[pos_idx/2+MAZE_SIDE*(next_virtual_cell)] & wall.north) == 0)) {
                 next_virtual_cell++;
                 if (flood[pos_idx] - flood[pos_idx+MAZE_SIDE*2*next_virtual_cell] == cost_table[next_virtual_cell]) {
                     for (ii=0; ii < next_virtual_cell; ii++) {
@@ -741,7 +759,7 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
             }
 //            south:
             next_virtual_cell = 0;
-            while ((pos_idx/2-MAZE_SIDE*(next_virtual_cell) < MAZE_SIDE*(MAZE_SIDE - 1)) && ((maze[pos_idx/2-MAZE_SIDE*(next_virtual_cell)] & wall.south) == 0)) {
+            while ((pos_idx/2 >= MAZE_SIDE*(next_virtual_cell)) && ((maze[pos_idx/2-MAZE_SIDE*(next_virtual_cell)] & wall.south) == 0)) {
                 next_virtual_cell++;
                 if (flood[pos_idx] - flood[pos_idx-MAZE_SIDE*2*next_virtual_cell] == cost_table[next_virtual_cell]) {
                     for (ii=0; ii < next_virtual_cell; ii++) {

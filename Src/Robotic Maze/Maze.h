@@ -52,7 +52,6 @@ void Search_Short_Way_with_turns(void);
 unsigned int PlayMaze(void);
 
 extern unsigned int calculation_time;
-#define cell_step 300
 
 #define ABS(x)  (((x) < 0) ? (-(x)) : (x))
 

@@ -97,7 +97,7 @@ int main(void){
     }
 
 	if (LaunchPad_Input() == 0x03) {
-	    inject(2);
+	    inject(1);
 	    while (LaunchPad_Input() ) continue;
 	}
 
@@ -162,7 +162,7 @@ void Solve_Maze(void) {
         show_number((time+(SCANPERSECOND/20))/(SCANPERSECOND/10), 1);
     }
     where_am_i = 0;
-    data_log_finish();
+//    data_log_finish();
     LaunchPad_Output(0);
     if (FRAM_log_Stop()) LaunchPad_Output(RED);
     record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
@@ -243,9 +243,9 @@ void Configure(void) {
 		{"Cross cost xxxxx", &data.crosscost,			decimal},
 		{"Step cost  xxxxx", &data.stepcost,            decimal},
 		{"Str Accel  xxxxx", &data.str_accel,           decimal},
-		{"Cell step  xxxxx", &data.p_step,              decimal},
+		{"Cell step  xxxxx", &data.cell_step,           decimal},
 		{"Voltage Calxxxxx", &data.volt_calibr,			decimal},
-		{"LowBat Lvl xxxxx", &data.low_battery_level, decimal},
+		{"LowBat Lvl xxxxx", &data.low_battery_level,   decimal},
 		{"Edit path       ", &edit_path,				execute},
 		{"Save&Exit       ", 0,                         none}
 	};
@@ -450,7 +450,7 @@ void Explore_Maze(void)	{
 		show_number((time+(SCANPERSECOND/20))/(SCANPERSECOND/10), 1);
 	} 
     where_am_i = 0;
-    data_log_finish();
+//    data_log_finish();
     FRAM_log_Stop();
     record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
     FRAM_log_Start(0x0000);

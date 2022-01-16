@@ -1,40 +1,40 @@
-Threshold     800
-MAXspeed      16000
-MINspeed      12000
-MAXmotor      16000
-TurnSpeed     6000
-Accelerat     100
-K*error       8
-K*de/dt       100
-Kintegral     0
-MotorKprop    135
-MotorKint     256
-OnWay         100
-RunNumber     0
-PathLength    1
-MapSize       10
-StartPoint    0
-EndPoint      8
-IRlevel       31
-map           0
-LeftHand      2
-ColorRed      780
-ColorGreen    1024
-ColorBlue     1024
-ColorThr      400
-ColorSat      600
-DstToleran    80
-GuardDist     80
-SensorOffs    50
-IgnoreError   1
-BrakePath     40
-TimeToRun     300
-TurnCost      100
-CrossCost     0
-StepCost      200
-StrAccel      100
-CellStep      300
-Volt_calibr   100
-Bat_low_lvl   63
-Length_tab    89
-Watermark     5
+Threshold     800  swap !
+MAXspeed      16000 swap !
+MINspeed      12000 swap !
+MAXmotor      16000 swap !
+TurnSpeed     6000 swap !
+Accelerat     100 swap !
+K*error       8 swap !
+K*de/dt       100 swap !
+Kintegral     0 swap !
+MotorKprop    135 swap !
+MotorKint     256 swap !
+OnWay         100 swap !
+RunNumber     0 swap !
+PathLength    0 swap !
+MapSize       10 swap !
+StartPoint    0 swap !
+EndPoint      8 swap !
+IRlevel       31 swap !
+map           0 swap !
+LeftHand      2 swap !
+ColorRed      780 swap !
+ColorGreen    1024 swap !
+ColorBlue     1024 swap !
+ColorThr      400 swap !
+ColorSat      600 swap !
+DstToleran    80 swap !
+GuardDist     80 swap !
+SensorOffs    50 swap !
+IgnoreError   1 swap !
+BrakePath     40 swap !
+TimeToRun     300 swap !
+TurnCost      100 swap !
+CrossCost     0 swap !
+StepCost      200 swap !
+StrAccel      100 swap !
+CellStep      300 swap !
+Volt_calibr   100 swap !
+Bat_low_lvl   63 swap !
+Length_tab    89 swap !
+Watermark     5 swap !
