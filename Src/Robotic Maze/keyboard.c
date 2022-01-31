@@ -16,9 +16,9 @@ unsigned int readkey;
 void kbd_init(void) {
 #ifdef PCA
     readkey = 0xFF;
-    i2c_wr_reg(I2C_PCA_ADDR, configuration, (unsigned char *)&readkey, 1);
-    i2c_wr_reg(I2C_PCA_ADDR, polarity_inversion, (unsigned char *)&readkey, 1);
-    i2c_rd_reg(I2C_PCA_ADDR, input_port, (unsigned char *)&readkey, 1);
+    i2c_wr_reg(I2C_PCA_ADDR, pca_reg_configuration, (unsigned char *)&readkey, 1);
+    i2c_wr_reg(I2C_PCA_ADDR, pca_reg_polarity_inversion, (unsigned char *)&readkey, 1);
+    i2c_rd_reg(I2C_PCA_ADDR, pca_reg_input_port, (unsigned char *)&readkey, 1);
 #else	
     KEY_PORT->SEL0 &= ~KEY_MASK;
     KEY_PORT->SEL1 &= ~KEY_MASK;    // 1) configure P1.4 and P1.1 as GPIO

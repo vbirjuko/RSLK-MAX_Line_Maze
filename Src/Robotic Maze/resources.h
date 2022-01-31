@@ -45,4 +45,6 @@
 
 // ********** ADC ********************
 #define ADC14_Priority      7
+
+
 #endif /* RESOURCES_H_ */

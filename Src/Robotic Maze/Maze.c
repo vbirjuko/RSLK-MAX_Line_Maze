@@ -114,8 +114,11 @@ void run_segment(speed_t runspeed, unsigned int distance) {
         if (photo_data_ready ) {
             if (CollisionFlag) return;
             photo_data_ready  = 0;
-            FRAM_log_data();
-            data_log(where_am_i << 8 | current_sensor, 1);
+#if FRAM_SIZE == 0
+                    data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
             track_error = 0; blind = 1; activ_sensor_count = 0; last_sensor = 256; first_sensor = 256; photo_mask = 0;
 
             photo_mask = current_sensor;
@@ -253,9 +256,12 @@ unsigned int turn(rotation_dir_t dir) {
                 while(count < 2) {
                     if (photo_data_ready ) {
                         photo_data_ready  = 0;
-                        FRAM_log_data();
                         photo_sensor = current_sensor;
-                        data_log(where_am_i << 8 | current_sensor, 1);
+#if FRAM_SIZE == 0
+                    data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
 
                         if ((RightSteps - LeftSteps) < slow_difference) {
                             if ((turnspeed += data.acceleration) < 1500) turnspeed = 1500;
@@ -289,9 +295,12 @@ unsigned int turn(rotation_dir_t dir) {
                 while(count < 2) {
                     if (photo_data_ready ) {
                         photo_data_ready  = 0;
-                        FRAM_log_data();
                         photo_sensor = current_sensor;
-                        data_log(where_am_i << 8 | current_sensor, 1);
+#if FRAM_SIZE == 0
+                    data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
 
                         if ((LeftSteps - RightSteps) < slow_difference) {
                             if ((turnspeed += data.acceleration) < 1500) turnspeed = 1500;
@@ -337,8 +346,11 @@ unsigned int SpeedTurn(rotation_dir_t dir) {
                 Motor_Speed(0, speed);
                 if (photo_data_ready ) {
                     photo_data_ready  = 0;
-                    FRAM_log_data();
+#if FRAM_SIZE == 0
                     data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
                 }
                 if (CollisionFlag) return 1;
             } while (RightSteps < stop_difference);
@@ -350,8 +362,11 @@ unsigned int SpeedTurn(rotation_dir_t dir) {
                 Motor_Speed(speed, 0);
                 if (photo_data_ready ) {
                     photo_data_ready  = 0;
-                    FRAM_log_data();
+#if FRAM_SIZE == 0
                     data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
                 }
                 if (CollisionFlag) return 1;
             } while (LeftSteps < stop_difference);
@@ -429,7 +444,7 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	unsigned int skip=0, skiplevel, maxspeed;
 	unsigned int last_index = 0, current_index, count_green, count_yellow, count_red, found_red = 0;
 	unsigned int expect_index = UNKNOWN, turn_index;
-//	uint32_t *data_ptr;
+    volatile unsigned int record_count = 0;
 	rotation_dir_t   turn_direction = straight;
 	int		move_direction = north;
 	coordinate_t my_coordinate = {0, 0};
@@ -437,8 +452,13 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	int segment_length, start_position;
 
 	where_am_i = Entrance;
-    data_log_init();
 
+#if FRAM_SIZE == 0
+	data_log_init();
+#else
+    FRAM_dma_log_Start(0x0004);
+    frames_to_go = FRAM_SIZE/sizeof(data_buffer_t);
+#endif
 	CollisionFlag = 0;
 	BumpInt_Init(&CollisionHandler);
 	LaunchPad_Output(GREEN);
@@ -451,10 +471,12 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	while (CURRENT_DISTANCE < segment_length) {
 	    if (photo_data_ready) {
 	        photo_data_ready = 0;
-	        FRAM_log_data();
-	        data_log(where_am_i << 8 | current_sensor, 1);
-	        if (current_sensor) break;
-
+#if FRAM_SIZE == 0
+                    data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
+            if (current_sensor) break;
 	        if ((speed += data.acceleration) > maxspeed) speed = maxspeed;
 	        if (speed < 1500) speed = 1500;
 	        Motor_Speed(speed, speed);
@@ -574,8 +596,16 @@ full_restart:
 			update_display();
 			putstr(3, 3, "BUMPER HIT", 1);
 			where_am_i = old_ret;
+#if FRAM_SIZE == 0
 			data_log_finish();
-			return 1;
+#else
+			if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+		    record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+		    if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+		    if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+		    if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+#endif
+		    return 1;
 		}
 		LaunchPad_Output(BLUE);
 		maze_entrance = 0;
@@ -589,7 +619,7 @@ full_restart:
 		// Check for left and right exits.
 		if(photo_sensor & (1u << 7)) { available |= LEFT_MASK; }
 		if(photo_sensor & (1u << 0)) { available |= RIGHT_MASK; }
-		if (where_am_i)  where_am_i = 0x01 | available;
+		if (where_am_i)  where_am_i = Solve | available;
 
 		Motor_Speed(speed, speed);
 
@@ -601,9 +631,12 @@ full_restart:
 			if (photo_data_ready ) {
 			    unsigned int linecount = 0, prev_stat = 0;
 				photo_data_ready  = 0;
-				FRAM_log_data();
 				photo_sensor = current_sensor;
-				data_log(where_am_i << 8 | current_sensor, 1);
+#if FRAM_SIZE == 0
+                    data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
 
 				// проверка условия непрерывности линии
 				for (ii=0; ii< 8; ii++) {
@@ -623,7 +656,15 @@ full_restart:
 					update_display();
 					putstr(3, 3, "BUMPER HIT", 1);
 					where_am_i = old_ret;
-					data_log_finish();
+#if FRAM_SIZE == 0
+            data_log_finish();
+#else
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+            record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+            if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+            if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+#endif
 					return 1;
 				}
 			}
@@ -637,10 +678,13 @@ full_restart:
 //		    while ((CURRENT_DISTANCE - start_position) < LINE_WIDTH) {
 				if (photo_data_ready ) {
 					photo_data_ready  = 0;
-					FRAM_log_data();
 					photo_sensor = current_sensor;
 					if (photo_sensor == 0) blind = 1;
-					data_log(where_am_i << 8 | current_sensor, 1);
+#if FRAM_SIZE == 0
+                    data_log(where_am_i << 8 | current_sensor, 1);
+#else
+                    FRAM_log_data();
+#endif
 					ii--;
 				}
 			}
@@ -672,6 +716,7 @@ full_restart:
             }
         }
         if (where_am_i) {
+#if FRAM_SIZE == 0
             data_log( (my_coordinate.east & 0x000000ff)			| (coord_east_lsb << 8), 1);
             data_log( ((my_coordinate.east & 0x0000ff00) >> 8)	| (coord_east_msb << 8), 1);
             data_log( (my_coordinate.north & 0x000000ff) 		| (coord_north_lsb << 8), 1);
@@ -679,6 +724,9 @@ full_restart:
             data_log( (segment_length & 0x000000ff) 			| (segm_length_lsb << 8), 1);
             data_log( ((segment_length & 0x0000ff00)>> 8)		| (segm_length_msb << 8), 1);
             data_log( (current_index & 0xff)                    | (node_idx << 8) , 1);
+#else
+            FRAM_log_slow(my_coordinate, segment_length, current_index);
+#endif
         }
 #ifdef WITH_BGX
         if (STREAM_BIT) {
@@ -795,7 +843,15 @@ full_restart:
 						putstr(strlen+1, 6, number_str, 1);
 						Motor_Stop();
 						where_am_i = old_ret;
-						data_log_finish();
+#if FRAM_SIZE == 0
+            data_log_finish();
+#else
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+            record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+            if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+            if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+#endif
 						return 1;
 					}
 				}
@@ -901,9 +957,11 @@ full_restart:
 			while ((CURRENT_DISTANCE - start_position) < data.sensor_offset)  {
 			    if (photo_data_ready) {
 			        photo_data_ready = 0;
-			        FRAM_log_data();
+#if FRAM_SIZE == 0
 			        data_log(where_am_i << 8 | current_sensor, 1);
-
+#else
+                    FRAM_log_data();
+#endif
 		            if (turn_direction != straight) {
                         if ((speed -= data.acceleration) < data.turnspeed) speed = data.turnspeed;
                         Motor_Speed(speed, speed);
@@ -917,7 +975,15 @@ full_restart:
 				putstr(3, 3, "I AM LOST", 1);
 				Motor_Stop();
 				where_am_i = old_ret;
-				data_log_finish();
+#if FRAM_SIZE == 0
+            data_log_finish();
+#else
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+            record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+            if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+            if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+#endif
 				return 1;
 			}
 
@@ -998,7 +1064,15 @@ full_restart:
 					Motor_Speed(0, 0);
 					speed  = 0;
 					where_am_i = old_ret;
-					data_log_finish();
+#if FRAM_SIZE == 0
+            data_log_finish();
+#else
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+            record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+            if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+            if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+#endif
 					return 1;
 				}
 
@@ -1065,7 +1139,15 @@ finish:
         }
 
 save_map:
-    data_log_finish();
+#if FRAM_SIZE == 0
+            data_log_finish();
+#else
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+            record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+            if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+            if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+            if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+#endif
     Motor_Stop();
     BumpInt_Stop();
     where_am_i = old_ret;

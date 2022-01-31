@@ -94,10 +94,12 @@ int main(void){
     crc_err = calc_crc32((uint8_t*)&data, sizeof(data));
     if (crc_err){
         LaunchPad_LED(1);
+        spi_read_eeprom(EEPROM_COPY_ADDRESS, (unsigned char *)&data, sizeof(data));
+        crc_err = calc_crc32((uint8_t*)&data, sizeof(data));
     }
 
 	if (LaunchPad_Input() == 0x03) {
-	    inject(1);
+	    inject(4);
 	    while (LaunchPad_Input() ) continue;
 	}
 
@@ -151,10 +153,7 @@ int main(void){
 }
 
 void Solve_Maze(void) {
-    volatile unsigned int record_count = 0;
     show_number(data.runnumber, 0);
-    FRAM_log_Start(0x0004);
-    frames_to_go = FRAM_SIZE/sizeof(data_buffer_t);
     delay_us(1000000);
     time = 0;
     Motor_Enable();
@@ -164,11 +163,6 @@ void Solve_Maze(void) {
     where_am_i = 0;
 //    data_log_finish();
     LaunchPad_Output(0);
-    if (FRAM_log_Stop()) LaunchPad_Output(RED);
-    record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
-    if (FRAM_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
-    if (FRAM_log_write((uint8_t*)&record_count, ((void* )0 ), sizeof(record_count))) LaunchPad_Output(RED|BLUE);
-    if (FRAM_log_Stop()) LaunchPad_Output(BLUE);
 //    putstr(0, 6, "Press UP to save", 0);
 //    putstr(0, 7,  " map in EEPROM ", 0);
     frames_to_go = 0;
@@ -438,11 +432,8 @@ void TestTachom(void)				{
 
 
 void Explore_Maze(void)	{
-    volatile unsigned int record_count = 0;
 
 	show_number(data.runnumber, 0);
-	FRAM_log_Start(0x0004);
-	frames_to_go = FRAM_SIZE/sizeof(data_buffer_t);
 	delay_us(1000000);
 	time = 0;
 	Motor_Enable();
@@ -451,12 +442,6 @@ void Explore_Maze(void)	{
 	} 
     where_am_i = 0;
 //    data_log_finish();
-    FRAM_log_Stop();
-    record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
-    FRAM_log_Start(0x0000);
-    FRAM_log_write((uint8_t*)&record_count, ((void* )0 ), sizeof(record_count));
-    FRAM_log_Stop();
-    frames_to_go = 0;
 	Motor_Speed(0, 0);
 
 	data.crc32 = calc_crc32((uint8_t*)&data, sizeof(data)-4);

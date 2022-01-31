@@ -505,7 +505,7 @@ uint32_t fram_rdsr(instance_t *instance, int * none) {
     uint8_t status_value;
     UNUSED(none);
 
-    if (FRAM_rdsr(&status_value)) return 1;
+    if (FRAM_dma_rdsr(&status_value)) return 1;
     if (instance->stack_idx < FORTH_STACK_SIZE - 1) {
             instance->stack[instance->stack_idx++] = status_value;
             return 0;
@@ -520,7 +520,7 @@ uint32_t fram_wrsr(instance_t *instance, int * none) {
 
     if (instance->stack_idx < 1) return 1;
     status_value = instance->stack[--instance->stack_idx];
-    if (FRAM_wrsr(status_value)) return 1;
+    if (FRAM_dma_wrsr(status_value)) return 1;
     return 0;
 }
 
@@ -539,86 +539,121 @@ uint32_t dump_fram(instance_t *instance, int * none) {
             mask <<= 4;
         }
 
-        if (FRAM_read_Start(addr)) return 1;
+        if (FRAM_dma_read_Start(addr)) return 1;
         while (size) {
             rowsize = 16 - (addr % 16);
             if (rowsize > size) rowsize = size;
-            if (FRAM_log_write(scratchpad, scratchpad, rowsize)) return 1;
+            if (FRAM_dma_log_read(scratchpad, rowsize)) return 1;
+            FRAM_dma_wait_EOT();
             print_row(instance, addr, addrsize, scratchpad, rowsize);
             addr += rowsize;
             size -= rowsize;
         }
-        return FRAM_log_Stop();
+        return FRAM_dma_log_Stop();
 }
 
 uint32_t fram_log_decode (instance_t *instance, int *none) {
-    static data_buffer_t log_buffer;
-    unsigned int record_count = 0, ii, jj, mask;
+    volatile data_buffer_t log_buffer;
+    volatile unsigned int record_count = 0;
+    unsigned int ii, jj; //, mask;
 
-    if (FRAM_read_Start(0x00000)) return 1;
-    FRAM_wait_EOT();
-    instance->UART_OutChar('.');
-    if (FRAM_log_write((uint8_t*)&record_count, (uint8_t*)&record_count, sizeof(record_count))) return 1;
-    FRAM_wait_EOT();
+    if (FRAM_dma_read_Start(0x00000)) return 1;
+    if (FRAM_dma_log_read((uint8_t*)&record_count, sizeof(record_count))) return 1;
+    FRAM_dma_wait_EOT();
     instance->UART_OutString(".\r\n");
 
     for (ii = 0; ii < record_count; ii++) {
-        if (FRAM_log_write((uint8_t*)&log_buffer, (uint8_t*)&log_buffer, sizeof(log_buffer))) return 1;
-        FRAM_wait_EOT();
-        instance->UART_OutUDec(log_buffer.Time);
-        instance->UART_OutChar(',');
-        mask = 1;
-        for (jj = 0; jj < 8; jj++) {
-            if (log_buffer.sensors & mask) instance->UART_OutChar('#');
-            else                           instance->UART_OutChar(' ');
-            mask <<= 1;
-        }
-        instance->UART_OutChar(',');
-        instance->UART_OutUDec(log_buffer.vbat);
-        instance->UART_OutChar(',');
-        if (log_buffer.setspeedLeft < 0) {
-            log_buffer.setspeedLeft = -log_buffer.setspeedLeft;
-            instance->UART_OutChar('-');
-        }
-        instance->UART_OutUDec(log_buffer.setspeedLeft);
-        instance->UART_OutChar(',');
-        if (log_buffer.setspeedRight < 0) {
-            log_buffer.setspeedRight = -log_buffer.setspeedRight;
-            instance->UART_OutChar('-');
-        }
-        instance->UART_OutUDec(log_buffer.setspeedRight);
-        instance->UART_OutChar(',');
-        if (log_buffer.RealSpeedLeft < 0) {
-            log_buffer.RealSpeedLeft = -log_buffer.RealSpeedLeft;
-            instance->UART_OutChar('-');
-        }
-        instance->UART_OutUDec(log_buffer.RealSpeedLeft);
-        instance->UART_OutChar(',');
-        if (log_buffer.RealSpeedRight < 0) {
-            log_buffer.RealSpeedRight = -log_buffer.RealSpeedRight;
-            instance->UART_OutChar('-');
-        }
-        instance->UART_OutUDec(log_buffer.RealSpeedRight);
-        instance->UART_OutChar(',');
+        if (FRAM_dma_log_read((uint8_t*)&log_buffer, sizeof(log_buffer))) return 1;
+        FRAM_dma_wait_EOT();
+        if (log_buffer.whereami) {
+            unsigned int sensors = log_buffer.sensors;
+            instance->UART_OutUDec(log_buffer.Time);
+            instance->UART_OutChar(',');
+//            mask = 1;
+            for (jj = 0; jj < 8; jj++) {
+                if (sensors & 0x01) instance->UART_OutChar('#');
+                else                           instance->UART_OutChar(' ');
+                sensors >>= 1;
+            }
 
-        if (log_buffer.StepsLeft < 0) {
-            log_buffer.StepsLeft = -log_buffer.StepsLeft;
-            instance->UART_OutChar('-');
-        }
-        instance->UART_OutUDec(log_buffer.StepsLeft);
-        instance->UART_OutChar(',');
+            instance->UART_OutChar(',');
+            if (log_buffer.whereami & LEFT_MASK)       instance->UART_OutChar('L'); else instance->UART_OutChar(' ');
+            if (log_buffer.whereami & STRAIGHT_MASK)   instance->UART_OutChar('S'); else instance->UART_OutChar(' ');
+            if (log_buffer.whereami & RIGHT_MASK)      instance->UART_OutChar('R'); else instance->UART_OutChar(' ');
+            instance->UART_OutChar(',');
+            switch (log_buffer.whereami & 0x07) {
+                case Entrance:
+                    instance->UART_OutString("Entrance");
+                    break;
+                case Solve:
+                    instance->UART_OutString("Solve");
+                    break;
+                case Segment:
+                    instance->UART_OutString("Segment");
+                    break;
+                case Turn:
+                    instance->UART_OutString("Turn");
+                    break;
+            }
 
-        if (log_buffer.StepsRight < 0) {
-            log_buffer.StepsRight = -log_buffer.StepsRight;
-            instance->UART_OutChar('-');
-        }
-        instance->UART_OutUDec(log_buffer.StepsRight);
+            instance->UART_OutChar(',');
+            instance->UART_OutUDec(log_buffer.vbat);
+            instance->UART_OutChar(',');
+            if (log_buffer.setspeedLeft < 0) {
+                log_buffer.setspeedLeft = -log_buffer.setspeedLeft;
+                instance->UART_OutChar('-');
+            }
+            instance->UART_OutUDec(log_buffer.setspeedLeft);
+            instance->UART_OutChar(',');
+            if (log_buffer.setspeedRight < 0) {
+                log_buffer.setspeedRight = -log_buffer.setspeedRight;
+                instance->UART_OutChar('-');
+            }
+            instance->UART_OutUDec(log_buffer.setspeedRight);
+            instance->UART_OutChar(',');
+            if (log_buffer.RealSpeedLeft < 0) {
+                log_buffer.RealSpeedLeft = -log_buffer.RealSpeedLeft;
+                instance->UART_OutChar('-');
+            }
+            instance->UART_OutUDec(log_buffer.RealSpeedLeft);
+            instance->UART_OutChar(',');
+            if (log_buffer.RealSpeedRight < 0) {
+                log_buffer.RealSpeedRight = -log_buffer.RealSpeedRight;
+                instance->UART_OutChar('-');
+            }
+            instance->UART_OutUDec(log_buffer.RealSpeedRight);
+            instance->UART_OutChar(',');
 
-        instance->UART_OutString("\r\n");
+            if (log_buffer.StepsLeft < 0) {
+                log_buffer.StepsLeft = -log_buffer.StepsLeft;
+                instance->UART_OutChar('-');
+            }
+            instance->UART_OutUDec(log_buffer.StepsLeft);
+            instance->UART_OutChar(',');
+
+            if (log_buffer.StepsRight < 0) {
+                log_buffer.StepsRight = -log_buffer.StepsRight;
+                instance->UART_OutChar('-');
+            }
+            instance->UART_OutUDec(log_buffer.StepsRight);
+            instance->UART_OutString("\r\n");
+        } else {
+            instance->UART_OutString("Segment Length = ");
+            instance->UART_OutUDec(log_buffer.segmentLength);
+            instance->UART_OutString("\r\nCurrent index = ");
+            instance->UART_OutUDec(log_buffer.nodeNum);
+            instance->UART_OutString(" , Coord X = ");
+            if (log_buffer.coordX < 0) { instance->UART_OutChar('-'); instance->UART_OutUDec(-log_buffer.coordX); }
+            else { instance->UART_OutUDec(log_buffer.coordX); }
+            instance->UART_OutString(" , Coord Y = ");
+            if (log_buffer.coordY < 0) { instance->UART_OutChar('-'); instance->UART_OutUDec(-log_buffer.coordY); }
+            else { instance->UART_OutUDec(log_buffer.coordY); }
+            instance->UART_OutString("\r\n");
+        }
     }
 
 
-    return FRAM_log_Stop();
+    return FRAM_dma_log_Stop();
 }
 
 uint32_t dump_mem(instance_t *instance, int * none) {

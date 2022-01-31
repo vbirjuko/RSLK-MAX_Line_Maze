@@ -6,8 +6,8 @@
  *
  *  DMA channel usage:
  *
- *  Channel 0 - Reserved for SPI EUSCI_B0 TX
- *  Channel 1 - Reserved for SPI EUSCI_B0 RX
+ *  Channel 0 - SPI FRAM EUSCI_B0 TX
+ *  Channel 1 - SPI FRAM EUSCI_B0 RX
  *  Channel 2 - Reserved for I2c EUSCI_B1 TX
  *  Channel 3 - Reserved for I2c EUSCI_B1 RX
  *  Channel 4 - CRC
@@ -19,6 +19,7 @@
  *      INT3 - memory to memory
  *      INT2 - display
  *      INT1 - CRC32
+ *      INT0 - SPI FRAM
  */
 #include "driverlib.h"
 

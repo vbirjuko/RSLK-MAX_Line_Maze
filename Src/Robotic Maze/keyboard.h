@@ -7,10 +7,10 @@
 
 #define I2C_PCA_ADDR	0x82
 enum pca_reg {
-	input_port = 0x00,
-	output_port = 0x01,
-	polarity_inversion = 0x02,
-	configuration = 0x03,
+    pca_reg_input_port = 0x00,
+    pca_reg_output_port = 0x01,
+    pca_reg_polarity_inversion = 0x02,
+    pca_reg_configuration = 0x03,
 };
 
 typedef enum {
