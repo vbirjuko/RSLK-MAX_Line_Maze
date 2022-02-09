@@ -383,13 +383,11 @@ unsigned int SpeedTurn(rotation_dir_t dir) {
 // This function decides which way to turn during the learning phase of
 // maze solving.  It uses the variable available_directions which indicate
 // whether there is an exit in each of the three directions. If no - turn back
-rotation_dir_t SelectTurn(unsigned int available_directions, const unsigned int * sequence, unsigned int skipcount) {
+rotation_dir_t SelectTurn(unsigned int available_directions, const unsigned int * sequence) {
     unsigned int  i;
     if (available_directions) {
         for (i = 0; i < 3; i++) {
-            if (available_directions & sequence[i]) {
-                if (skipcount-- == 0) break;
-            }
+            if (available_directions & sequence[i]) break;
         }
         switch (sequence[i]) {
             case STRAIGHT_MASK:
@@ -441,7 +439,7 @@ void update_coordinate (coordinate_t *current_coordinate, unsigned int length, b
 // In explore mode recorded path will be deleted and robot don't stop in end cell, but record.
 unsigned int solveMaze(unsigned int explore_mode) {
 	unsigned int maze_entrance = 1, available, photo_sensor, step=0, play = 0, ii, blind;
-	unsigned int skip=0, skiplevel, maxspeed;
+	unsigned int skiplevel, maxspeed;
 	unsigned int last_index = 0, current_index, count_green, count_yellow, count_red, found_red = 0;
 	unsigned int expect_index = UNKNOWN, turn_index;
     volatile unsigned int record_count = 0;
@@ -920,8 +918,7 @@ full_restart:
 			    turn_direction = path[step++];
 			    if (turn_direction == back) break;
 			}
-			else	turn_direction = SelectTurn(available, turn_sequence[turn_index], skip);
-			skip = 0;
+			else	turn_direction = SelectTurn(available, turn_sequence[turn_index]);
 
 			// Make the turn indicated by the path.
 #ifdef WITH_BGX
@@ -976,13 +973,13 @@ full_restart:
 				Motor_Stop();
 				where_am_i = old_ret;
 #if FRAM_SIZE == 0
-            data_log_finish();
+				data_log_finish();
 #else
-            if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
-            record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
-            if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
-            if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
-            if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+                if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+                record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+                if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+                if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+                if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
 #endif
 				return 1;
 			}
@@ -1065,13 +1062,13 @@ full_restart:
 					speed  = 0;
 					where_am_i = old_ret;
 #if FRAM_SIZE == 0
-            data_log_finish();
+					data_log_finish();
 #else
-            if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
-            record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
-            if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
-            if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
-            if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
+                    if (FRAM_dma_log_Stop()) LaunchPad_Output(RED);
+                    record_count = FRAM_SIZE/sizeof(data_buffer_t) - frames_to_go;
+                    if (FRAM_dma_log_Start(0x0000)) LaunchPad_Output(RED|GREEN);
+                    if (FRAM_dma_log_write((uint8_t*)&record_count, sizeof(record_count))) LaunchPad_Output(RED|BLUE);
+                    if (FRAM_dma_log_Stop()) LaunchPad_Output(BLUE);
 #endif
 					return 1;
 				}
@@ -1166,32 +1163,6 @@ save_map:
 	return 0;
 }
 
-void BrakeTest(void) {
-	unsigned int    photo_sensor, segment_length, length;
-	CollisionFlag = 0;
-	BumpInt_Init(&CollisionHandler);
-	Motor_Enable();
-	Motor_Speed(data.maxspeed, data.maxspeed);
-    photo_sensor = 0;
-    do {
-		if (CollisionFlag) break;
-        if (photo_data_ready ) {
-            photo_data_ready  = 0;
-            photo_sensor = current_sensor;
-        }
-    } while (photo_sensor == 0);
-		if (!CollisionFlag) run_segment(slow, 0);
-		BumpInt_Stop();
-		segment_length = CURRENT_DISTANCE;
-		Motor_Speed(0, 0);
-		while (kbdread() != KEY_DOWN) {
-			length = CURRENT_DISTANCE - segment_length;
-			show_number(length, 0);
-//            Clock_Delay1ms(100);
-			delay_us(200*500);
-		}
-		Motor_Disable();
-}
 
 void FreeRun(void) {
     unsigned int travel_length;

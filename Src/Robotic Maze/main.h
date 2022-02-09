@@ -10,6 +10,6 @@
 
 #include "stdint.h"
 
-extern volatile unsigned int time;//, time_delay;
+extern volatile unsigned int time, time_delay;
 
 #endif /* MAIN_H */

@@ -12,6 +12,13 @@ typedef struct {
 	volatile uint32_t Sum, data_ready;    // sum of the last Size samples
 } LPF_t;
 
+// calculate one filter output, called at sampling rate
+// Input: new ADC data   Output: filter output
+// y(n) = (x(n)+x(n-1)+...+x(n-Size-1)/Size
+uint32_t LPF__Calc(LPF_t * instance, uint32_t newdata);
+
+void LPF__Init(LPF_t * instance, uint32_t initial, uint32_t size);
+
 extern LPF_t LFP_center, LPF_left, LPF_right, LPF_battery;
 
 //extern uint32_t LPFSize;      // Size-point average, Size=1 to 512

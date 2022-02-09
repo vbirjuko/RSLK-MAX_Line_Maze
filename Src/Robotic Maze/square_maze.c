@@ -350,18 +350,33 @@ unsigned int do_prediction(coordinate_t from_coordinate, bearing_dir_t possible_
     } while(1);
 
     possible_destination = from_coordinate;
+    try_bearing = possible_bearing;
     do {
-        update_coordinate(&possible_destination, possible_bearing);
+        update_coordinate(&possible_destination, (bearing_dir_t)try_bearing);
         possible_walls = maze[possible_destination.north*MAZE_SIDE + possible_destination.east];
         if ((possible_walls & 0x0f) != ((possible_walls & 0xf0)>>4)) return 0;   // мы в этой ячейке еще точно не были - надо посетить
         if ((possible_walls == 0xaa) || (possible_walls == 0x55)) continue; // если попали в "туннель" повторяем движение.
+                                          // 0000 0000 aaaa bbbb
+        possible_walls >>= try_bearing;     // 0000 0000 000a aaab
+        possible_walls &= 0x0f;
+
+        if ((possible_walls & (west_wall | east_wall)) == (west_wall | east_wall)) continue;
+        if ((possible_walls & (north_wall | west_wall)) == (north_wall | west_wall)) {
+            try_bearing = (try_bearing + right) & TURN_MASK;
+            continue;
+        }
+        if ((possible_walls & (north_wall | east_wall)) == (north_wall | east_wall)) {
+            try_bearing = (try_bearing + left) & TURN_MASK;
+            continue;
+        }
+
         break;
     } while(1);
 
     for (ii = 0; ii < 4; ii++) {
         counts[ii] = maze_count[possible_destination.north*MAZE_SIDE + possible_destination.east][ii];
     }
-    counts[(possible_bearing + back) & TURN_MASK] += 1;
+    counts[(try_bearing + back) & TURN_MASK] += 1;
 //    unavailable = 0; // допустим стен нет
     for (ii = 0; ii < 4; ii++) {
 //        if (unavailable & (1 << ii)) continue; // если есть стена, то эту сторону пропускаем
@@ -373,7 +388,7 @@ unsigned int do_prediction(coordinate_t from_coordinate, bearing_dir_t possible_
     }
     if (count_yellow != 3) return 0;
 // есть одиночная нить - мы там были и туда суваться нет надобности - отмечаем, что мы там были и вернулись
-    maze_count[possible_destination.north*MAZE_SIDE + possible_destination.east][(possible_bearing + back) & TURN_MASK] += 2;
+    maze_count[possible_destination.north*MAZE_SIDE + possible_destination.east][(try_bearing + back) & TURN_MASK] += 2;
     maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][possible_bearing] += 2;
 
     return 1;
@@ -406,7 +421,7 @@ void solve_sq_maze(void) {
     unsigned int steps, count_green, count_yellow, count_red, ii, skiplevel, unavailable;
 //    unsigned int open_cost, close_cost;
     unsigned int my_next_possible_bearing, back_bearing, finish_found = 0;
-    coordinate_t check_coordinate;
+//    coordinate_t check_coordinate;
     start.east =  (data.sq_init & 0x00F000) >> 12;
     start.north = (data.sq_init & 0x000F00) >>  8;
     my_coordinate = start;
@@ -446,7 +461,7 @@ void solve_sq_maze(void) {
             }
         }
         if ((my_coordinate.east == 7 || my_coordinate.east == 8)&& (my_coordinate.north == 7 || my_coordinate.north == 8)) {
-            finish = my_coordinate;
+            if (!finish_found) finish = my_coordinate;
             finish_found = 1;
 //            break;
         }
