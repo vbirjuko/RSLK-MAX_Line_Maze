@@ -61,9 +61,10 @@ uint8_t maze_count[256][4] = {{0, 0, 0, 0}};
 bearing_dir_t my_bearing;
 
 
-void update_cell_walls(coordinate_t start_cell, bearing_dir_t start_direction, uint8_t start_cell_walls) {
-    unsigned int cell_walls;
+unsigned int update_cell_walls(coordinate_t start_cell, bearing_dir_t start_direction, unsigned int start_cell_walls) {
+    unsigned int cell_walls, prev_cell_walls;
 
+    prev_cell_walls = maze[start_cell.north * MAZE_SIDE + start_cell.east];
     cell_walls = start_cell_walls << start_direction;
     cell_walls |= (cell_walls << 4) | (cell_walls >> 4);
 
@@ -89,6 +90,8 @@ void update_cell_walls(coordinate_t start_cell, bearing_dir_t start_direction, u
             maze[(start_cell.north-1) * MAZE_SIDE + start_cell.east] |= (north_wall | (north_wall <<4));
         else
             maze[(start_cell.north-1) * MAZE_SIDE + start_cell.east] &= ~(north_wall | (north_wall <<4));
+
+    return maze[start_cell.north * MAZE_SIDE + start_cell.east] != prev_cell_walls;
 }
 
 void init_maze(unsigned int x_size, unsigned int y_size, coordinate_t start_cell, bearing_dir_t start_dir) {
@@ -172,16 +175,16 @@ void draw_maze (coordinate_t cursor, path_t * show_path) {
             if (maze[ii*MAZE_SIDE + jj] & west_wall) linetype |= 1;
             if (maze[ii*MAZE_SIDE + jj] & (west_wall << 4)) linetype |= 2;
             linetype = table[linetype];
-            squareXY( jj * p_step, 63-  (ii   * p_step),
-                      jj * p_step, 63- ((ii+1)* p_step),
-                      linetype);
+            squareXY(jj * p_step, 63-  (ii   * p_step),
+                     jj * p_step, (((ii+1)* p_step) > 63) ? 0 : (63- ((ii+1)* p_step)),
+                     linetype);
             if ( jj == (maxX - 1)) { // восточная стена рисуется только у правого столбца
                 linetype = 0;
                 if (maze[ii*MAZE_SIDE + jj] &  east_wall) linetype |= 1;
                 if (maze[ii*MAZE_SIDE + jj] & (east_wall << 4)) linetype |= 2;
                 linetype = table[linetype];
-                squareXY((jj+1)*p_step, 63- (ii   * p_step),
-                         (jj+1)*p_step, 63-((ii+1)* p_step),
+                squareXY(  (jj+1)*p_step, 63- (ii   * p_step),
+                         (jj+1)*p_step, (((ii+1)* p_step) > 63) ? 0 : (63- ((ii+1)* p_step)),
                          linetype);
             }
             // южная стена
@@ -212,8 +215,8 @@ void draw_maze (coordinate_t cursor, path_t * show_path) {
     squareXY((finish.east*p_step+2), 63- (finish.north*p_step+2),
             ((finish.east+1)*p_step-2), 63-((finish.north+1)*p_step-2), 1);
 
-    squareXY((cursor.east*p_step+2), 63- (cursor.north*p_step+2),
-            ((cursor.east+1)*p_step-2), 63-((cursor.north+1)*p_step-2), 1);
+    squareXY((cursor.east*p_step+3), 63- (cursor.north*p_step+3),
+            ((cursor.east+1)*p_step-3), 63-((cursor.north+1)*p_step-3), 1);
 
     // Теперь маршрут
     if (*(show_path->pathlength))    {
@@ -334,7 +337,7 @@ unsigned int do_prediction(coordinate_t from_coordinate, bearing_dir_t possible_
         possible_walls >>= try_bearing;
         possible_walls = (possible_walls | (possible_walls >> 4)) & 0x0F;
         if ((possible_walls & (west_wall | east_wall | north_wall)) == (west_wall | east_wall | north_wall)) {
-            maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][possible_bearing] = 2;
+            maze_count[from_coordinate.north*MAZE_SIDE + from_coordinate.east][possible_bearing] = 2;
             return 1;
         }
         if ((possible_walls & (west_wall | east_wall)) == (west_wall | east_wall)) continue;
@@ -389,7 +392,7 @@ unsigned int do_prediction(coordinate_t from_coordinate, bearing_dir_t possible_
     if (count_yellow != 3) return 0;
 // есть одиночная нить - мы там были и туда суваться нет надобности - отмечаем, что мы там были и вернулись
     maze_count[possible_destination.north*MAZE_SIDE + possible_destination.east][(try_bearing + back) & TURN_MASK] += 2;
-    maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][possible_bearing] += 2;
+    maze_count[from_coordinate.north*MAZE_SIDE + from_coordinate.east][possible_bearing] += 2;
 
     return 1;
 
@@ -417,16 +420,16 @@ __WEAK t_color get_color(void) {
 
 void solve_sq_maze(void) {
     rotation_dir_t turn_direction;
-    uint8_t current_cell_walls = 0;
+    unsigned int current_cell_walls = 0;
     unsigned int steps, count_green, count_yellow, count_red, ii, skiplevel, unavailable;
-//    unsigned int open_cost, close_cost;
+    //    unsigned int open_cost, close_cost;
     unsigned int my_next_possible_bearing, back_bearing, finish_found = 0;
-//    coordinate_t check_coordinate;
+    //    coordinate_t check_coordinate;
     start.east =  (data.sq_init & 0x00F000) >> 12;
     start.north = (data.sq_init & 0x000F00) >>  8;
     my_coordinate = start;
-//    my_coordinate.east = (data.sq_init & 0x0F000) >> 12;
-//    my_coordinate.north= (data.sq_init & 0x00F00) >> 8;
+    //    my_coordinate.east = (data.sq_init & 0x0F000) >> 12;
+    //    my_coordinate.north= (data.sq_init & 0x00F00) >> 8;
     back_bearing = my_bearing = (bearing_dir_t)((data.sq_init & 0xF0000) >> 16);
     fill_data32_dma(0, (uint32_t *)maze_count, 256);
 
@@ -453,37 +456,41 @@ void solve_sq_maze(void) {
         current_cell_walls = get_walls();
         update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
         draw_maze(my_coordinate, &global_path);
+
+        // варианты нахождения финиша:
         if (current_cell_walls == (west_wall | north_wall | east_wall)) {
             if (get_color() == red) {
                 finish = my_coordinate;
                 finish_found = 1;
-//                break;
+                //                break;
             }
         }
+        // Финиш в центре лабиринта 16х16
         if ((my_coordinate.east == 7 || my_coordinate.east == 8)&& (my_coordinate.north == 7 || my_coordinate.north == 8)) {
             if (!finish_found) finish = my_coordinate;
             finish_found = 1;
-//            break;
+            //            break;
         }
         delay_us(1000000);
 
         if (finish_found) {
             unsigned int opencost =search_way_simple(start, finish, (bearing_dir_t)((data.sq_init & 0xF0000) >> 16), 1);
             if (opencost >= search_way_simple(start, finish, (bearing_dir_t)((data.sq_init & 0xF0000) >> 16), 0)) {
+                LaunchPad_Output(GREEN | BLUE);
                 break;
             }
         }
         do {
-//            luc_tremo:
+            //            luc_tremo:
             if (((current_cell_walls & west_wall) == 0) && (
                     maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][((my_bearing + left) & TURN_MASK)] == 0))
-                        do_prediction(my_coordinate, (bearing_dir_t)((my_bearing + left) & TURN_MASK));
+                do_prediction(my_coordinate, (bearing_dir_t)((my_bearing + left) & TURN_MASK));
             if (((current_cell_walls & east_wall) == 0) && (
                     maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][((my_bearing + right) & TURN_MASK)] == 0))
-                        do_prediction(my_coordinate, (bearing_dir_t)((my_bearing + right) & TURN_MASK));
+                do_prediction(my_coordinate, (bearing_dir_t)((my_bearing + right) & TURN_MASK));
             if (((current_cell_walls & north_wall) == 0) && (
                     maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][my_bearing] == 0))
-                        do_prediction(my_coordinate, my_bearing);
+                do_prediction(my_coordinate, my_bearing);
 
             count_green = 0; count_yellow = 0; count_red = 0;
             unavailable = current_cell_walls;
@@ -512,19 +519,81 @@ void solve_sq_maze(void) {
             my_next_possible_bearing += turn_direction;
             my_next_possible_bearing &= TURN_MASK;
 
+            //            if ((turn_direction == back)) {
+            //                if ((data.pathlength > 2) &&
+            //                        (data.path[data.pathlength-1] == data.path[data.pathlength-2]) &&
+            //                        ((data.path[data.pathlength-1] == left) || (data.path[data.pathlength-1] == right))) {
+            //                    if (!finish_found) finish = my_coordinate;
+            //                }
+            //            }
 
-            if ((turn_direction == back)) {
-                rotation_dir_t virtual_turn_direction;
-                // если возвращаемся назад, то давайте посмотрим, как далеко нужно идти назад.
-                // для этого возвращаемся по сохранённому пути и ищем ячейку у которой есть
-                // зелёый проход (count == 0).
+//#define OLD
+#ifndef OLD
+            if (skiplevel != 1) {
+#else
+            if ((turn_direction == back)) { // || (skiplevel == 2) ) {
                 unsigned int jj, /*back_length = 0,*/ back_step;
+                rotation_dir_t virtual_turn_direction;
+#endif
+                // если возвращаемся назад, то давайте посмотрим, как далеко нужно идти назад.
+                // для этого возвращаемся по жёлтому пути и ищем ячейку у которой есть
+                // зелёый проход (count == 0). После чего расчитываем до той ячейки кратчайший маршрут
+                // и перемещаемся туда.
+
                 coordinate_t back_trace = my_coordinate;
 
                 back_bearing = my_bearing;
+#ifndef OLD
+                do {
+                    back_bearing += turn_direction;
+                    back_bearing &= TURN_MASK;
+                    data.path[data.pathlength++] = turn_direction;
+                    simplifyPath();
+                    do {
+                        maze_count[back_trace.north*MAZE_SIDE + back_trace.east][back_bearing] += 1;
+                        update_coordinate(&back_trace, (bearing_dir_t)back_bearing);
+                        maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+back) & TURN_MASK] += 1;
+                        current_cell_walls = maze[back_trace.north * MAZE_SIDE + back_trace.east];
+                        current_cell_walls >>= back_bearing;     // 0000 0000 000a aaab
+                        current_cell_walls &= 0x0f;
+                    } while ((current_cell_walls & (west_wall | east_wall)) == (west_wall | east_wall));
+                    if (((current_cell_walls & west_wall) == 0) && (
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][((back_bearing + left) & TURN_MASK)] == 0))
+                        do_prediction(back_trace, (bearing_dir_t)((back_bearing + left) & TURN_MASK));
+                    if (((current_cell_walls & east_wall) == 0) && (
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][((back_bearing + right) & TURN_MASK)] == 0))
+                        do_prediction(back_trace, (bearing_dir_t)((back_bearing + right) & TURN_MASK));
+                    if (((current_cell_walls & north_wall) == 0) && (
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][back_bearing] == 0))
+                        do_prediction(back_trace, (bearing_dir_t) back_bearing);
+
+                    count_green = 0; count_yellow = 0; count_red = 0;
+                    unavailable = current_cell_walls;
+                    for (ii = 0; ii < 4; ii++) {
+                        if (unavailable & (1 << ii)) {
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+ii) & TURN_MASK] = 3;
+                            continue; // если есть стена, то эту сторону пропускаем
+                        }
+                        switch (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+ii) & TURN_MASK]) {
+                        case 0: count_green++;  break;
+                        case 1: count_yellow++; break;
+                        default: count_red++;    break;
+                        }
+                    }
+                    if (count_yellow == 3) skiplevel = 0; // есть одиночная нить пересекающая узел - возвращаемся
+                    else if (count_green)  break;  // есть зелёные проходы - конец отката.
+                    else if (count_yellow) skiplevel = 2;  // оставить все не красные проходы
+                    else goto save_map;   // если нет ни зелёного, ни желтого прохода - больше идти некуда.
+
+                    if (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+left) & TURN_MASK] >= skiplevel) unavailable |= west_wall;
+                    if (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+right) & TURN_MASK] >= skiplevel) unavailable |= east_wall;
+                    if (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+straight) & TURN_MASK] >= skiplevel) unavailable |= north_wall;
+                    turn_direction = SelectTurn(unavailable);
+                } while(1);
+#else
                 do {
                     back_step = data.length[data.pathlength]/data.cell_step;
-//                    back_length += back_step;
+                    //                    back_length += back_step;
                     while (back_step--) {
                         maze_count[back_trace.north*MAZE_SIDE+back_trace.east][my_next_possible_bearing] += 1;
                         update_coordinate(&back_trace, (bearing_dir_t)my_next_possible_bearing);
@@ -543,7 +612,7 @@ void solve_sq_maze(void) {
                     }
                     if (jj < 4) break;
                 } while (data.pathlength);
-
+#endif
                 // Телепортируемся
                 draw_maze(my_coordinate, &global_path);
                 LaunchPad_Output(BLUE);
@@ -562,12 +631,12 @@ void solve_sq_maze(void) {
                     current_cell_walls = get_walls();
                     update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
                     draw_maze(my_coordinate, &global_path);
-                    if (current_cell_walls == (west_wall | north_wall | east_wall)) {
-                        if (get_color() == red) break;
-                    }
+                    //                    if (current_cell_walls == (west_wall | north_wall | east_wall)) {
+                    //                        if (get_color() == red) break;
+                    //                    }
                     delay_us(1000000);
                 }
-//                my_bearing = make_turn((rotation_dir_t)((back_bearing - my_bearing) & TURN_MASK));
+                //                my_bearing = make_turn((rotation_dir_t)((back_bearing - my_bearing) & TURN_MASK));
                 current_cell_walls = get_walls();
             } else {
                 LaunchPad_Output(0);
@@ -579,24 +648,23 @@ void solve_sq_maze(void) {
         make_turn(turn_direction);
         my_bearing += turn_direction;
         my_bearing &= TURN_MASK;
-
-//        data.path[data.pathlength] = turn_direction;
+        //        data.path[data.pathlength] = turn_direction;
         data.path[data.pathlength] = (my_bearing - back_bearing) & TURN_MASK;
         data.pathlength++;
         back_bearing = my_bearing;
-// You should check to make sure that the path_length does not
-// exceed the bounds of the array.
+        // You should check to make sure that the path_length does not
+        // exceed the bounds of the array.
         if (data.pathlength >= MAX_PATH_LENGTH) {
             squareXY(0,0, 127, 63, 1);
             update_display();
             putstr(0, 3, "MAX PATH LENGTH", 1);
-//            Motor_Speed(0, 0);
-//            speed  = 0;
-//            where_am_i = old_ret;
+            //            Motor_Speed(0, 0);
+            //            speed  = 0;
+            //            where_am_i = old_ret;
             return ;//1;
         }
 
-// Simplify the learned path.
+        // Simplify the learned path.
         simplifyPath();
 
 
@@ -695,7 +763,8 @@ static unsigned int insert_val(unsigned int val, unsigned int idx) {
 }
 
 static unsigned int extract_val(void) {
-    return sort_idx[--sort_tail];
+    if (sort_tail)  sort_tail--;
+    return sort_idx[sort_tail];
 }
 #else
 #define insert_val(x, y)  floodqueue[queue_wr++] = y; queue_wr &= QUEUE_MASK;
