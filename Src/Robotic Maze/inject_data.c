@@ -2,387 +2,7 @@
 #include "SPI_EEProm.h"
 #include "dma.h"
 
-const map_cell_t injectible_data[] = {
-{0, 0, 23, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-{300, 0, 24, 2, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{1200, 0, 9, UNKNOWN, UNKNOWN, 1, 0, 4, 4, 0},
-{1500, 0, 10, 4, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{3000, 0, 19, 5, UNKNOWN, 3, 0, 0, 4, 0},
-{3300, 0, 12, 6, UNKNOWN, 4, 0, 0, 4, 0},
-{4500, 0, 22, UNKNOWN, UNKNOWN, 5, 0, 4, 4, 0},
-{600, 300, 35, 8, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{900, 300, 14, UNKNOWN, UNKNOWN, 7, 0, 4, 4, 0},
-{1200, 300, UNKNOWN, 10, 2, UNKNOWN, 4, 0, 0, 4},
-{1500, 300, UNKNOWN, 11, 3, 9, 4, 0, 0, 0},
-{2700, 300, 15, UNKNOWN, UNKNOWN, 10, 0, 4, 4, 0},
-{3300, 300, UNKNOWN, 13, 5, UNKNOWN, 4, 0, 0, 4},
-{4200, 300, 17, UNKNOWN, UNKNOWN, 12, 0, 4, 4, 0},
-{900, 600, 30, 15, 8, UNKNOWN, 0, 0, 0, 4},
-{2700, 600, UNKNOWN, UNKNOWN, 11, 14, 4, 4, 0, 0},
-{3300, 600, 20, 17, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{4200, 600, UNKNOWN, UNKNOWN, 13, 16, 4, 4, 0, 0},
-{1200, 900, 25, 19, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{3000, 900, UNKNOWN, UNKNOWN, 4, 18, 4, 4, 0, 0},
-{3300, 900, UNKNOWN, 21, 16, UNKNOWN, 4, 0, 0, 4},
-{4200, 900, 27, 22, UNKNOWN, 20, 0, 0, 4, 0},
-{4500, 900, 67, UNKNOWN, 6, 21, 0, 4, 0, 0},
-{0, 1200, UNKNOWN, 24, 0, UNKNOWN, 4, 0, 0, 4},
-{300, 1200, 29, UNKNOWN, 1, 23, 0, 4, 0, 0},
-{1200, 1200, UNKNOWN, 26, 18, UNKNOWN, 4, 0, 0, 4},
-{3000, 1200, 32, 27, UNKNOWN, 25, 0, 0, 4, 0},
-{4200, 1200, 34, UNKNOWN, 21, 26, 0, 4, 0, 0},
-{0, 1500, 45, 29, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{300, 1500, 41, UNKNOWN, 24, 28, 0, 4, 0, 0},
-{900, 1500, UNKNOWN, 31, 14, UNKNOWN, 4, 0, 0, 4},
-{1800, 1500, 37, 32, UNKNOWN, 30, 0, 0, 4, 0},
-{3000, 1500, UNKNOWN, UNKNOWN, 26, 31, 4, 4, 0, 0},
-{3300, 1500, 39, 34, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{4200, 1500, 52, UNKNOWN, 27, 33, 0, 4, 0, 0},
-{600, 1800, UNKNOWN, 36, 7, UNKNOWN, 4, 0, 0, 4},
-{1500, 1800, 42, UNKNOWN, UNKNOWN, 35, 0, 4, 4, 0},
-{1800, 1800, UNKNOWN, 38, 31, UNKNOWN, 4, 0, 0, 4},
-{2700, 1800, 61, 39, UNKNOWN, 37, 0, 0, 4, 0},
-{3300, 1800, UNKNOWN, 40, 33, 38, 4, 0, 0, 0},
-{3900, 1800, 44, UNKNOWN, UNKNOWN, 39, 0, 4, 4, 0},
-{300, 2100, UNKNOWN, 42, 29, UNKNOWN, 4, 0, 0, 4},
-{1500, 2100, UNKNOWN, UNKNOWN, 36, 41, 4, 4, 0, 0},
-{3000, 2100, 62, 44, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{3900, 2100, UNKNOWN, UNKNOWN, 40, 43, 4, 4, 0, 0},
-{0, 2400, UNKNOWN, 46, 28, UNKNOWN, 4, 0, 0, 4},
-{300, 2400, 54, 47, UNKNOWN, 45, 0, 0, 4, 0},
-{1500, 2400, 58, UNKNOWN, UNKNOWN, 46, 0, 4, 4, 0},
-{2100, 2400, 73, 116, 117, UNKNOWN, 0, 0, 0, 4},
-{3300, 2400, 63, 50, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{3600, 2400, 64, UNKNOWN, UNKNOWN, 49, 0, 4, 4, 0},
-{3900, 2400, 65, 52, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{4200, 2400, 66, UNKNOWN, 34, 51, 0, 4, 0, 0},
-{0, 2700, 106, 54, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{300, 2700, 68, UNKNOWN, 46, 53, 0, 4, 0, 0},
-{600, 2700, 69, 56, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{900, 2700, UNKNOWN, UNKNOWN, UNKNOWN, 55, 4, 4, 4, 0},
-{1200, 2700, 71, 58, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{1500, 2700, UNKNOWN, 59, 47, 57, 4, 0, 0, 0},
-{1800, 2700, UNKNOWN, UNKNOWN, 114, 58, 4, 4, 0, 0},
-{2400, 2700, UNKNOWN, 61, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-{2700, 2700, UNKNOWN, UNKNOWN, 38, 60, 4, 4, 0, 0},
-{3000, 2700, 74, 63, 43, UNKNOWN, 0, 0, 0, 4},
-{3300, 2700, UNKNOWN, UNKNOWN, 49, 62, 4, 4, 0, 0},
-{3600, 2700, UNKNOWN, 65, 50, UNKNOWN, 4, 0, 0, 4},
-{3900, 2700, UNKNOWN, UNKNOWN, 51, 64, 4, 4, 0, 0},
-{4200, 2700, UNKNOWN, 67, 52, UNKNOWN, 4, 0, 0, 4},
-{4500, 2700, UNKNOWN, UNKNOWN, 22, 66, 4, 4, 0, 0},
-{300, 3000, 82, 69, 54, UNKNOWN, 0, 0, 0, 4},
-{600, 3000, 76, UNKNOWN, 55, 68, 0, 4, 0, 0},
-{900, 3000, 77, 71, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{1200, 3000, UNKNOWN, 72, 57, 70, 4, 0, 0, 0},
-{1800, 3000, 80, UNKNOWN, UNKNOWN, 71, 0, 4, 4, 0},
-{2100, 3000, UNKNOWN, 74, 48, UNKNOWN, 4, 0, 0, 4},
-{3000, 3000, UNKNOWN, 75, 62, 73, 4, 0, 0, 0},
-{4500, 3000, 113, UNKNOWN, UNKNOWN, 74, 0, 4, 4, 0},
-{600, 3300, UNKNOWN, 77, 69, UNKNOWN, 4, 0, 0, 4},
-{900, 3300, UNKNOWN, UNKNOWN, 70, 76, 4, 4, 0, 0},
-{1200, 3300, 85, 79, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{1500, 3300, UNKNOWN, UNKNOWN, UNKNOWN, 78, 4, 4, 4, 0},
-{1800, 3300, 87, 81, 72, UNKNOWN, 0, 0, 0, 4},
-{4200, 3300, 89, UNKNOWN, UNKNOWN, 80, 0, 4, 4, 0},
-{300, 3600, UNKNOWN, 83, 68, UNKNOWN, 4, 0, 0, 4},
-{600, 3600, 91, UNKNOWN, UNKNOWN, 82, 0, 4, 4, 0},
-{900, 3600, 100, 85, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{1200, 3600, 92, UNKNOWN, 78, 84, 0, 4, 0, 0},
-{1500, 3600, 93, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-{1800, 3600, UNKNOWN, 88, 80, UNKNOWN, 4, 0, 0, 4},
-{2700, 3600, 96, 89, UNKNOWN, 87, 0, 0, 4, 0},
-{4200, 3600, UNKNOWN, UNKNOWN, 81, 88, 4, 4, 0, 0},
-{300, 3900, 98, 91, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{600, 3900, UNKNOWN, UNKNOWN, 83, 90, 4, 4, 0, 0},
-{1200, 3900, UNKNOWN, 93, 85, UNKNOWN, 4, 0, 0, 4},
-{1500, 3900, 101, UNKNOWN, 86, 92, 0, 4, 0, 0},
-{1800, 3900, 102, 95, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-{2400, 3900, 104, UNKNOWN, UNKNOWN, 94, 0, 4, 4, 0},
-{2700, 3900, UNKNOWN, 97, 88, UNKNOWN, 4, 0, 0, 4},
-{4200, 3900, 105, UNKNOWN, UNKNOWN, 96, 0, 4, 4, 0},
-{300, 4200, UNKNOWN, 99, 90, UNKNOWN, 4, 0, 0, 4},
-{600, 4200, 107, UNKNOWN, UNKNOWN, 98, 0, 4, 4, 0},
-{900, 4200, 108, 101, 84, UNKNOWN, 0, 0, 0, 4},
-{1500, 4200, UNKNOWN, 102, 93, 100, 4, 0, 0, 0},
-{1800, 4200, 110, UNKNOWN, 94, 101, 0, 4, 0, 0},
-{2100, 4200, 111, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-{2400, 4200, 112, 105, 95, UNKNOWN, 0, 0, 0, 4},
-{4200, 4200, UNKNOWN, UNKNOWN, 97, 104, 4, 4, 0, 0},
-{0, 4500, UNKNOWN, 107, 53, UNKNOWN, 4, 0, 0, 4},
-{600, 4500, UNKNOWN, 108, 99, 106, 4, 0, 0, 0},
-{900, 4500, UNKNOWN, 109, 100, 107, 4, 0, 0, 0},
-{1500, 4500, UNKNOWN, UNKNOWN, UNKNOWN, 108, 4, 4, 4, 0},
-{1800, 4500, UNKNOWN, 111, 102, UNKNOWN, 4, 0, 0, 4},
-{2100, 4500, UNKNOWN, 112, 103, 110, 4, 0, 0, 0},
-{2400, 4500, UNKNOWN, 113, 104, 111, 4, 0, 0, 0},
-{4500, 4500, UNKNOWN, UNKNOWN, 75, 112, 4, 4, 0, 0},
-{1800, 2100, 59, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{2100, 2400, 73, 116, 117, UNKNOWN, 0, 0, 0, 4},        // 48
-{2400, 2100, 116, UNKNOWN, UNKNOWN, 117, 0, 4, 4, 0}, // 115
-{2400, 2400, UNKNOWN, UNKNOWN, 115, 48, 4, 4, 0, 0}, // 116
-{2100, 2100, 48, 115, UNKNOWN, UNKNOWN, 0, 0, 4, 4}, // 117
 
-//{0,0,23,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-//{280,0,24,2,UNKNOWN,UNKNOWN,0,0,4,4},
-//{1120,0,9,UNKNOWN,UNKNOWN,1,0,4,4,0},
-//{1400,0,10,4,UNKNOWN,UNKNOWN,0,0,4,4},
-//{2800,0,19,5,UNKNOWN,3,0,0,4,0},
-//{3080,0,12,6,UNKNOWN,4,0,0,4,0},
-//{4200,0,22,UNKNOWN,UNKNOWN,5,0,4,4,0},
-//{560,280,35,8,UNKNOWN,UNKNOWN,0,0,4,4},
-//{840,280,14,UNKNOWN,UNKNOWN,7,0,4,4,0},
-//{1120,280,UNKNOWN,10,2,UNKNOWN,4,0,0,4},
-//{1400,280,UNKNOWN,11,3,9,4,0,0,0},
-//{2520,280,15,UNKNOWN,UNKNOWN,10,0,4,4,0},
-//{3080,280,UNKNOWN,13,5,UNKNOWN,4,0,0,4},
-//{3920,280,17,UNKNOWN,UNKNOWN,12,0,4,4,0},
-//{840,560,30,15,8,UNKNOWN,0,0,0,4},
-//{2520,560,UNKNOWN,UNKNOWN,11,14,4,4,0,0},
-//{3080,560,20,17,UNKNOWN,UNKNOWN,0,0,4,4},
-//{3920,560,UNKNOWN,UNKNOWN,13,16,4,4,0,0},
-//{1120,840,25,19,UNKNOWN,UNKNOWN,0,0,4,4},
-//{2800,840,UNKNOWN,UNKNOWN,4,18,4,4,0,0},
-//{3080,840,UNKNOWN,21,16,UNKNOWN,4,0,0,4},
-//{3920,840,27,22,UNKNOWN,20,0,0,4,0},
-//{4200,840,67,UNKNOWN,6,21,0,4,0,0},
-//{0,1120,UNKNOWN,24,0,UNKNOWN,4,0,0,4},
-//{280,1120,29,UNKNOWN,1,23,0,4,0,0},
-//{1120,1120,UNKNOWN,26,18,UNKNOWN,4,0,0,4},
-//{2800,1120,32,27,UNKNOWN,25,0,0,4,0},
-//{3920,1120,34,UNKNOWN,21,26,0,4,0,0},
-//{0,1400,45,29,UNKNOWN,UNKNOWN,0,0,4,4},
-//{280,1400,41,UNKNOWN,24,28,0,4,0,0},
-//{840,1400,UNKNOWN,31,14,UNKNOWN,4,0,0,4},
-//{1680,1400,37,32,UNKNOWN,30,0,0,4,0},
-//{2800,1400,UNKNOWN,UNKNOWN,26,31,4,4,0,0},
-//{3080,1400,39,34,UNKNOWN,UNKNOWN,0,0,4,4},
-//{3920,1400,52,UNKNOWN,27,33,0,4,0,0},
-//{560,1680,UNKNOWN,36,7,UNKNOWN,4,0,0,4},
-//{1400,1680,42,UNKNOWN,UNKNOWN,35,0,4,4,0},
-//{1680,1680,UNKNOWN,38,31,UNKNOWN,4,0,0,4},
-//{2520,1680,61,39,UNKNOWN,37,0,0,4,0},
-//{3080,1680,UNKNOWN,40,33,38,4,0,0,0},
-//{3640,1680,44,UNKNOWN,UNKNOWN,39,0,4,4,0},
-//{280,1960,UNKNOWN,42,29,UNKNOWN,4,0,0,4},
-//{1400,1960,UNKNOWN,UNKNOWN,36,41,4,4,0,0},
-//{2800,1960,62,44,UNKNOWN,UNKNOWN,0,0,4,4},
-//{3640,1960,UNKNOWN,UNKNOWN,40,43,4,4,0,0},
-//{0,2240,UNKNOWN,46,28,UNKNOWN,4,0,0,4},
-//{280,2240,54,47,UNKNOWN,45,0,0,4,0},
-//{1400,2240,58,UNKNOWN,UNKNOWN,46,0,4,4,0},
-//{1960,2240,73,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-//{3080,2240,63,50,UNKNOWN,UNKNOWN,0,0,4,4},
-//{3360,2240,64,UNKNOWN,UNKNOWN,49,0,4,4,0},
-//{3640,2240,65,52,UNKNOWN,UNKNOWN,0,0,4,4},
-//{3920,2240,66,UNKNOWN,34,51,0,4,0,0},
-//{0,2520,106,54,UNKNOWN,UNKNOWN,0,0,4,4},
-//{280,2520,68,UNKNOWN,46,53,0,4,0,0},
-//{560,2520,69,56,UNKNOWN,UNKNOWN,0,0,4,4},
-//{840,2520,UNKNOWN,UNKNOWN,UNKNOWN,55,4,4,4,0},
-//{1120,2520,71,58,UNKNOWN,UNKNOWN,0,0,4,4},
-//{1400,2520,UNKNOWN,59,47,57,4,0,0,0},
-//{1680,2520,UNKNOWN,UNKNOWN,114,58,4,4,0,0},
-//{2240,2520,UNKNOWN,61,UNKNOWN,UNKNOWN,4,0,4,4},
-//{2520,2520,UNKNOWN,UNKNOWN,38,60,4,4,0,0},
-//{2800,2520,74,63,43,UNKNOWN,0,0,0,4},
-//{3080,2520,UNKNOWN,UNKNOWN,49,62,4,4,0,0},
-//{3360,2520,UNKNOWN,65,50,UNKNOWN,4,0,0,4},
-//{3640,2520,UNKNOWN,UNKNOWN,51,64,4,4,0,0},
-//{3920,2520,UNKNOWN,67,52,UNKNOWN,4,0,0,4},
-//{4200,2520,UNKNOWN,UNKNOWN,22,66,4,4,0,0},
-//{280,2800,82,69,54,UNKNOWN,0,0,0,4},
-//{560,2800,76,UNKNOWN,55,68,0,4,0,0},
-//{840,2800,77,71,UNKNOWN,UNKNOWN,0,0,4,4},
-//{1120,2800,UNKNOWN,72,57,70,4,0,0,0},
-//{1680,2800,80,UNKNOWN,UNKNOWN,71,0,4,4,0},
-//{1960,2800,UNKNOWN,74,48,UNKNOWN,4,0,0,4},
-//{2800,2800,UNKNOWN,75,62,73,4,0,0,0},
-//{4200,2800,113,UNKNOWN,UNKNOWN,74,0,4,4,0},
-//{560,3080,UNKNOWN,77,69,UNKNOWN,4,0,0,4},
-//{840,3080,UNKNOWN,UNKNOWN,70,76,4,4,0,0},
-//{1120,3080,85,79,UNKNOWN,UNKNOWN,0,0,4,4},
-//{1400,3080,UNKNOWN,UNKNOWN,UNKNOWN,78,4,4,4,0},
-//{1680,3080,87,81,72,UNKNOWN,0,0,0,4},
-//{3920,3080,89,UNKNOWN,UNKNOWN,80,0,4,4,0},
-//{280,3360,UNKNOWN,83,68,UNKNOWN,4,0,0,4},
-//{560,3360,91,UNKNOWN,UNKNOWN,82,0,4,4,0},
-//{840,3360,100,85,UNKNOWN,UNKNOWN,0,0,4,4},
-//{1120,3360,92,UNKNOWN,78,84,0,4,0,0},
-//{1400,3360,93,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-//{1680,3360,UNKNOWN,88,80,UNKNOWN,4,0,0,4},
-//{2520,3360,96,89,UNKNOWN,87,0,0,4,0},
-//{3920,3360,UNKNOWN,UNKNOWN,81,88,4,4,0,0},
-//{280,3640,98,91,UNKNOWN,UNKNOWN,0,0,4,4},
-//{560,3640,UNKNOWN,UNKNOWN,83,90,4,4,0,0},
-//{1120,3640,UNKNOWN,93,85,UNKNOWN,4,0,0,4},
-//{1400,3640,101,UNKNOWN,86,92,0,4,0,0},
-//{1680,3640,102,95,UNKNOWN,UNKNOWN,0,0,4,4},
-//{2240,3640,104,UNKNOWN,UNKNOWN,94,0,4,4,0},
-//{2520,3640,UNKNOWN,97,88,UNKNOWN,4,0,0,4},
-//{3920,3640,105,UNKNOWN,UNKNOWN,96,0,4,4,0},
-//{280,3920,UNKNOWN,99,90,UNKNOWN,4,0,0,4},
-//{560,3920,107,UNKNOWN,UNKNOWN,98,0,4,4,0},
-//{840,3920,108,101,84,UNKNOWN,0,0,0,4},
-//{1400,3920,UNKNOWN,102,93,100,4,0,0,0},
-//{1680,3920,110,UNKNOWN,94,101,0,4,0,0},
-//{1960,3920,111,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-//{2240,3920,112,105,95,UNKNOWN,0,0,0,4},
-//{3920,3920,UNKNOWN,UNKNOWN,97,104,4,4,0,0},
-//{0,4200,UNKNOWN,107,53,UNKNOWN,4,0,0,4},
-//{560,4200,UNKNOWN,108,99,106,4,0,0,0},
-//{840,4200,UNKNOWN,109,100,107,4,0,0,0},
-//{1400,4200,UNKNOWN,UNKNOWN,UNKNOWN,108,4,4,4,0},
-//{1680,4200,UNKNOWN,111,102,UNKNOWN,4,0,0,4},
-//{1960,4200,UNKNOWN,112,103,110,4,0,0,0},
-//{2240,4200,UNKNOWN,113,104,111,4,0,0,0},
-//{4200,4200,UNKNOWN,UNKNOWN,75,112,4,4,0,0},
-//{1680,1960,59,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-};
-const map_cell_t kankou2003[] = {
-                                 {0,0,21,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {300,0,15,2,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {600,0,8,3,UNKNOWN,1,0,0,4,0},
-                                 {2100,0,10,4,UNKNOWN,2,0,0,4,0},
-                                 {3300,0,12,5,UNKNOWN,3,0,0,4,0},
-                                 {3600,0,13,UNKNOWN,UNKNOWN,4,0,4,4,0},
-                                 {4200,0,14,7,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {4500,0,40,UNKNOWN,UNKNOWN,6,0,4,4,0},
-                                 {600,300,UNKNOWN,9,2,UNKNOWN,4,0,0,4},
-                                 {1800,300,26,UNKNOWN,UNKNOWN,8,0,4,4,0},
-                                 {2100,300,17,11,3,UNKNOWN,0,0,0,4},
-                                 {3000,300,UNKNOWN,UNKNOWN,UNKNOWN,10,4,4,4,0},
-                                 {3300,300,UNKNOWN,UNKNOWN,4,UNKNOWN,4,4,0,4},
-                                 {3600,300,UNKNOWN,14,5,UNKNOWN,4,0,0,4},
-                                 {4200,300,UNKNOWN,UNKNOWN,6,13,4,4,0,0},
-                                 {300,600,22,16,1,UNKNOWN,0,0,0,4},
-                                 {1500,600,33,UNKNOWN,UNKNOWN,15,0,4,4,0},
-                                 {2100,600,UNKNOWN,18,10,UNKNOWN,4,0,0,4},
-                                 {2400,600,35,19,UNKNOWN,17,0,0,4,0},
-                                 {3000,600,36,20,UNKNOWN,18,0,0,4,0},
-                                 {4200,600,39,UNKNOWN,UNKNOWN,19,0,4,4,0},
-                                 {0,900,56,22,0,UNKNOWN,0,0,4,4},
-                                 {300,900,41,UNKNOWN,15,21,0,4,0,0},
-                                 {600,900,31,24,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {900,900,58,25,UNKNOWN,23,0,0,4,0},
-                                 {1200,900,32,UNKNOWN,UNKNOWN,24,0,4,4,0},
-                                 {1800,900,UNKNOWN,27,9,UNKNOWN,4,0,0,4},
-                                 {2100,900,43,UNKNOWN,UNKNOWN,26,0,4,4,0},
-                                 {3300,900,37,29,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {3600,900,66,30,UNKNOWN,28,0,0,4,0},
-                                 {3900,900,38,UNKNOWN,UNKNOWN,29,0,4,4,0},
-                                 {600,1200,UNKNOWN,UNKNOWN,23,UNKNOWN,4,4,0,4},
-                                 {1200,1200,UNKNOWN,UNKNOWN,25,UNKNOWN,4,4,0,4},
-                                 {1500,1200,49,34,16,UNKNOWN,0,0,0,4},
-                                 {1800,1200,50,UNKNOWN,UNKNOWN,33,0,4,4,0},
-                                 {2400,1200,UNKNOWN,36,18,UNKNOWN,4,0,0,4},
-                                 {3000,1200,UNKNOWN,UNKNOWN,19,35,4,4,0,0},
-                                 {3300,1200,UNKNOWN,UNKNOWN,28,UNKNOWN,4,4,0,4},
-                                 {3900,1200,UNKNOWN,UNKNOWN,30,UNKNOWN,4,4,0,4},
-                                 {4200,1200,UNKNOWN,40,20,UNKNOWN,4,0,0,4},
-                                 {4500,1200,47,UNKNOWN,7,39,0,4,0,0},
-                                 {300,1500,UNKNOWN,UNKNOWN,22,UNKNOWN,4,4,0,4},
-                                 {600,1500,57,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {2100,1500,UNKNOWN,44,27,UNKNOWN,4,0,0,4},
-                                 {3000,1500,52,UNKNOWN,UNKNOWN,43,0,4,4,0},
-                                 {3900,1500,94,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {4200,1500,UNKNOWN,47,UNKNOWN,UNKNOWN,4,0,4,4},
-                                 {4500,1500,55,UNKNOWN,40,46,0,4,0,0},
-                                 {1200,1800,UNKNOWN,49,UNKNOWN,UNKNOWN,4,0,4,4},
-                                 {1500,1800,70,UNKNOWN,33,48,0,4,0,0},
-                                 {1800,1800,60,51,34,UNKNOWN,0,0,0,4},
-                                 {2700,1800,63,UNKNOWN,UNKNOWN,50,0,4,4,0},
-                                 {3000,1800,64,53,44,UNKNOWN,0,0,0,4},
-                                 {3300,1800,UNKNOWN,UNKNOWN,UNKNOWN,52,4,4,4,0},
-                                 {4200,1800,107,55,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {4500,1800,116,UNKNOWN,47,54,0,4,0,0},
-                                 {0,2100,85,57,21,UNKNOWN,0,0,0,4},
-                                 {600,2100,68,UNKNOWN,42,56,0,4,0,0},
-                                 {900,2100,UNKNOWN,59,24,UNKNOWN,4,0,0,4},
-                                 {1200,2100,UNKNOWN,UNKNOWN,UNKNOWN,58,4,4,4,0},
-                                 {1800,2100,UNKNOWN,UNKNOWN,50,UNKNOWN,4,4,0,4},
-                                 {2100,2100,72,62,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {2400,2100,73,UNKNOWN,UNKNOWN,61,0,4,4,0},
-                                 {2700,2100,UNKNOWN,64,51,UNKNOWN,4,0,0,4},
-                                 {3000,2100,74,UNKNOWN,52,63,0,4,0,0},
-                                 {3300,2100,UNKNOWN,66,UNKNOWN,UNKNOWN,4,0,4,4},
-                                 {3600,2100,UNKNOWN,UNKNOWN,29,65,4,4,0,0},
-                                 {300,2400,77,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {600,2400,87,69,57,UNKNOWN,0,0,0,4},
-                                 {1200,2400,79,70,UNKNOWN,68,0,0,4,0},
-                                 {1500,2400,UNKNOWN,UNKNOWN,49,69,4,4,0,0},
-                                 {1800,2400,90,72,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {2100,2400,UNKNOWN,73,61,71,4,0,0,0},
-                                 {2400,2400,UNKNOWN,UNKNOWN,62,72,4,4,0,0},
-                                 {3000,2400,UNKNOWN,75,64,UNKNOWN,4,0,0,4},
-                                 {3300,2400,83,76,UNKNOWN,74,0,0,4,0},
-                                 {3600,2400,UNKNOWN,UNKNOWN,UNKNOWN,75,4,4,4,0},
-                                 {300,2700,UNKNOWN,UNKNOWN,67,UNKNOWN,4,4,0,4},
-                                 {900,2700,97,79,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {1200,2700,UNKNOWN,UNKNOWN,69,78,4,4,0,0},
-                                 {1500,2700,89,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {2700,2700,91,82,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {3000,2700,92,UNKNOWN,UNKNOWN,81,0,4,4,0},
-                                 {3300,2700,UNKNOWN,84,75,UNKNOWN,4,0,0,4},
-                                 {3600,2700,105,UNKNOWN,UNKNOWN,83,0,4,4,0},
-                                 {0,3000,108,86,56,UNKNOWN,0,0,0,4},
-                                 {300,3000,95,UNKNOWN,UNKNOWN,85,0,4,4,0},
-                                 {600,3000,UNKNOWN,UNKNOWN,68,UNKNOWN,4,4,0,4},
-                                 {1200,3000,98,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {1500,3000,UNKNOWN,UNKNOWN,80,UNKNOWN,4,4,0,4},
-                                 {1800,3000,UNKNOWN,91,71,UNKNOWN,4,0,0,4},
-                                 {2700,3000,UNKNOWN,UNKNOWN,81,90,4,4,0,0},
-                                 {3000,3000,104,93,82,UNKNOWN,0,0,0,4},
-                                 {3300,3000,122,UNKNOWN,UNKNOWN,92,0,4,4,0},
-                                 {3900,3000,UNKNOWN,UNKNOWN,45,UNKNOWN,4,4,0,4},
-                                 {300,3300,UNKNOWN,96,86,UNKNOWN,4,0,0,4},
-                                 {600,3300,110,97,UNKNOWN,95,0,0,4,0},
-                                 {900,3300,UNKNOWN,UNKNOWN,78,96,4,4,0,0},
-                                 {1200,3300,119,99,88,UNKNOWN,0,0,0,4},
-                                 {1500,3300,137,UNKNOWN,UNKNOWN,98,0,4,4,0},
-                                 {1800,3300,128,101,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {2100,3300,UNKNOWN,UNKNOWN,UNKNOWN,100,4,4,4,0},
-                                 {2400,3300,UNKNOWN,103,UNKNOWN,UNKNOWN,4,0,4,4},
-                                 {2700,3300,129,UNKNOWN,UNKNOWN,102,0,4,4,0},
-                                 {3000,3300,UNKNOWN,UNKNOWN,92,UNKNOWN,4,4,0,4},
-                                 {3600,3300,UNKNOWN,106,84,UNKNOWN,4,0,0,4},
-                                 {3900,3300,114,107,UNKNOWN,105,0,0,4,0},
-                                 {4200,3300,UNKNOWN,UNKNOWN,54,106,4,4,0,0},
-                                 {0,3600,125,109,85,UNKNOWN,0,0,0,4},
-                                 {300,3600,117,UNKNOWN,UNKNOWN,108,0,4,4,0},
-                                 {600,3600,UNKNOWN,UNKNOWN,96,UNKNOWN,4,4,0,4},
-                                 {2100,3600,120,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {2400,3600,121,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {3000,3600,138,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                                 {3900,3600,UNKNOWN,UNKNOWN,106,UNKNOWN,4,4,0,4},
-                                 {4200,3600,124,116,UNKNOWN,UNKNOWN,0,0,4,4},
-                                 {4500,3600,141,UNKNOWN,55,115,0,4,0,0},
-                                 {300,3900,UNKNOWN,118,109,UNKNOWN,4,0,0,4},
-                                 {600,3900,126,119,UNKNOWN,117,0,0,4,0},
-                                 {1200,3900,UNKNOWN,UNKNOWN,98,118,4,4,0,0},
-                                 {2100,3900,UNKNOWN,121,111,UNKNOWN,4,0,0,4},
-                                 {2400,3900,UNKNOWN,UNKNOWN,112,120,4,4,0,0},
-                                 {3300,3900,UNKNOWN,123,93,UNKNOWN,4,0,0,4},
-                                 {3900,3900,132,124,UNKNOWN,122,0,0,4,0},
-                                 {4200,3900,UNKNOWN,UNKNOWN,115,123,4,4,0,0},
-                                 {0,4200,134,126,108,UNKNOWN,0,0,0,4},
-                                 {600,4200,UNKNOWN,127,118,125,4,0,0,0},
-                                 {900,4200,135,UNKNOWN,UNKNOWN,126,0,4,4,0},
-                                 {1800,4200,UNKNOWN,129,100,UNKNOWN,4,0,0,4},
-                                 {2700,4200,UNKNOWN,UNKNOWN,103,128,4,4,0,0},
-                                 {3300,4200,UNKNOWN,131,UNKNOWN,UNKNOWN,4,0,4,4},
-                                 {3600,4200,139,UNKNOWN,UNKNOWN,130,0,4,4,0},
-                                 {3900,4200,UNKNOWN,133,123,UNKNOWN,4,0,0,4},
-                                 {4200,4200,140,UNKNOWN,UNKNOWN,132,0,4,4,0},
-                                 {0,4500,UNKNOWN,135,125,UNKNOWN,4,0,0,4},
-                                 {900,4500,UNKNOWN,UNKNOWN,127,134,4,4,0,0},
-                                 {1200,4500,UNKNOWN,137,UNKNOWN,UNKNOWN,4,0,4,4},
-                                 {1500,4500,UNKNOWN,138,99,136,4,0,0,0},
-                                 {3000,4500,UNKNOWN,139,113,137,4,0,0,0},
-                                 {3600,4500,UNKNOWN,140,131,138,4,0,0,0},
-                                 {4200,4500,UNKNOWN,141,133,139,4,0,0,0},
-                                 {4500,4500,UNKNOWN,UNKNOWN,116,140,4,4,0,0},
-};
 
 const map_cell_t youtube_data[] = {
 {0,0,11,1,UNKNOWN,UNKNOWN,0,0,4,4},
@@ -552,214 +172,8 @@ const map_cell_t alt_data[] = {
 {-1800, 3300, 72, 58, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
 {-1800, 3600, UNKNOWN, UNKNOWN, 71, UNKNOWN, 4, 4, 0, 4},
 {-1800, 3900, UNKNOWN, 60, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-
-//{0, 0, UNKNOWN, 1, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-//{300, 0, 12, UNKNOWN, UNKNOWN, 0, 0, 4, 4, 0},
-//{600, 0, 13, 3, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-//{900, 0, UNKNOWN, UNKNOWN, UNKNOWN, 2, 4, 4, 4, 0},
-//{1200, 0, 15, 5, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-//{1800, 0, 17, UNKNOWN, UNKNOWN, 4, 0, 4, 4, 0},
-//{2100, 0, 18, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{2400, 0, 19, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{2700, 0, UNKNOWN, 9, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-//{3000, 0, 21, 10, UNKNOWN, 8, 0, 0, 4, 0},
-//{3600, 0, 23, UNKNOWN, UNKNOWN, 9, 0, 4, 4, 0},
-//{3900, 0, 31, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{300, 300, 24, 13, 1, UNKNOWN, 0, 0, 0, 4},
-//{600, 300, UNKNOWN, UNKNOWN, 2, 12, 4, 4, 0, 0},
-//{900, 300, UNKNOWN, 15, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-//{1200, 300, 25, UNKNOWN, 4, 14, 0, 4, 0, 0},
-//{1500, 300, UNKNOWN, 17, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-//{1800, 300, 27, 18, 5, 16, 0, 0, 0, 0},
-//{2100, 300, UNKNOWN, 19, 6, 17, 4, 0, 0, 0},
-//{2400, 300, UNKNOWN, UNKNOWN, 7, 18, 4, 4, 0, 0},
-//{2700, 300, UNKNOWN, 21, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-//{3000, 300, 28, UNKNOWN, 9, 20, 0, 4, 0, 0},
-//{3300, 300, 29, 23, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-//{3600, 300, 30, UNKNOWN, 10, 22, 0, 4, 0, 0},
-//{300, 600, UNKNOWN, 25, 12, UNKNOWN, 4, 0, 0, 4},
-//{1200, 600, UNKNOWN, 26, 15, 24, 4, 0, 0, 0},
-//{1500, 600, UNKNOWN, UNKNOWN, UNKNOWN, 25, 4, 4, 4, 0},
-//{1800, 600, UNKNOWN, 28, 17, UNKNOWN, 4, 0, 0, 4},
-//{3000, 600, UNKNOWN, UNKNOWN, 21, 27, 4, 4, 0, 0},
-//{3300, 600, UNKNOWN, UNKNOWN, 22, UNKNOWN, 4, 4, 0, 4},
-//{3600, 600, UNKNOWN, 31, 23, UNKNOWN, 4, 0, 0, 4},
-//{3900, 600, 34, UNKNOWN, 11, 30, 0, 4, 0, 0},
-//{0, 600, 33, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{0, 900, 35, 34, 32, UNKNOWN, 0, 0, 0, 4},
-//{3900, 900, UNKNOWN, UNKNOWN, 31, 33, 4, 4, 0, 0},
-//{0, 1200, UNKNOWN, 36, 33, UNKNOWN, 4, 0, 0, 4},
-//{300, 1200, 48, 37, UNKNOWN, 35, 0, 0, 4, 0},
-//{900, 1200, UNKNOWN, UNKNOWN, UNKNOWN, 36, 4, 4, 4, 0},
-//{1200, 1200, 51, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{1500, 1200, UNKNOWN, 40, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-//{1800, 1200, 53, 41, UNKNOWN, 39, 0, 0, 4, 0},
-//{2400, 1200, 55, UNKNOWN, UNKNOWN, 40, 0, 4, 4, 0},
-//{2700, 1200, 56, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{3000, 1200, 57, 44, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-//{3300, 1200, UNKNOWN, UNKNOWN, UNKNOWN, 43, 4, 4, 4, 0},
-//{3600, 1200, 59, 46, UNKNOWN, UNKNOWN, 0, 0, 4, 4},
-//{3900, 1200, UNKNOWN, UNKNOWN, UNKNOWN, 45, 4, 4, 4, 0},
-//{0, 1500, UNKNOWN, 48, UNKNOWN, UNKNOWN, 4, 0, 4, 4},
-//{300, 1500, 61, 49, 36, 47, 0, 0, 0, 0},
-//{600, 1500, 62, 50, UNKNOWN, 48, 0, 0, 4, 0},
-//{900, 1500, 63, 51, UNKNOWN, 49, 0, 0, 4, 0},
-//{1200, 1500, 64, 52, 38, 50, 0, 0, 0, 0},
-//{1500, 1500, 65, 53, UNKNOWN, 51, 0, 0, 4, 0},
-//{1800, 1500, 66, UNKNOWN, 40, 52, 0, 4, 0, 0},
-//{2100, 1500, 67, UNKNOWN, UNKNOWN, UNKNOWN, 0, 4, 4, 4},
-//{2400, 1500, 68, 56, 41, UNKNOWN, 0, 0, 0, 4},
-//{2700, 1500, 69, 57, 42, 55, 0, 0, 0, 0},
-//{3000, 1500, UNKNOWN, 58, 43, 56, 4, 0, 0, 0},
-//{3300, 1500, 71, 59, UNKNOWN, 57, 0, 0, 4, 0},
-//{3600, 1500, UNKNOWN, 60, 45, 58, 4, 0, 0, 0},
-//{3900, 1500, 73, UNKNOWN, UNKNOWN, 59, 0, 4, 4, 0},
-//{300, 1800, UNKNOWN, UNKNOWN, 48, UNKNOWN, 4, 4, 0, 4},
-//{600, 1800, UNKNOWN, UNKNOWN, 49, UNKNOWN, 4, 4, 0, 4},
-//{900, 1800, UNKNOWN, UNKNOWN, 50, UNKNOWN, 4, 4, 0, 4},
-//{1200, 1800, UNKNOWN, UNKNOWN, 51, UNKNOWN, 4, 4, 0, 4},
-//{1500, 1800, UNKNOWN, UNKNOWN, 52, UNKNOWN, 4, 4, 0, 4},
-//{1800, 1800, UNKNOWN, 67, 53, UNKNOWN, 4, 0, 0, 4},
-//{2100, 1800, UNKNOWN, UNKNOWN, 54, 66, 4, 4, 0, 0},
-//{2400, 1800, UNKNOWN, UNKNOWN, 55, UNKNOWN, 4, 4, 0, 4},
-//{2700, 1800, UNKNOWN, 70, 56, UNKNOWN, 4, 0, 0, 4},
-//{3000, 1800, UNKNOWN, UNKNOWN, UNKNOWN, 69, 4, 4, 4, 0},
-//{3300, 1800, UNKNOWN, 72, 58, UNKNOWN, 4, 0, 0, 4},
-//{3600, 1800, UNKNOWN, UNKNOWN, UNKNOWN, 71, 4, 4, 4, 0},
-//{3900, 1800, UNKNOWN, UNKNOWN, 60, UNKNOWN, 4, 4, 0, 4},
 };
 
-const map_cell_t world1st[] = {
-                          {0,0,12,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                          {300,0,5,2,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {2100,0,8,UNKNOWN,UNKNOWN,1,0,4,4,0},
-                          {2400,0,9,4,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {4500,0,23,UNKNOWN,UNKNOWN,3,0,4,4,0},
-                          {300,300,UNKNOWN,6,1,UNKNOWN,4,0,0,4},
-                          {900,300,13,7,UNKNOWN,5,0,0,4,0},
-                          {1500,300,15,8,UNKNOWN,6,0,0,4,0},
-                          {2100,300,UNKNOWN,UNKNOWN,2,7,4,4,0,0},
-                          {2400,300,18,10,3,UNKNOWN,0,0,0,4},
-                          {3300,300,19,11,UNKNOWN,9,0,0,4,0},
-                          {4200,300,22,UNKNOWN,UNKNOWN,10,0,4,4,0},
-                          {0,600,UNKNOWN,13,0,UNKNOWN,4,0,4,4},
-                          {900,600,UNKNOWN,14,6,12,4,0,0,0},
-                          {1200,600,28,15,UNKNOWN,13,0,0,4,0},
-                          {1500,600,UNKNOWN,UNKNOWN,7,14,4,4,0,0},
-                          {1800,600,UNKNOWN,17,UNKNOWN,UNKNOWN,4,0,4,4},
-                          {2100,600,31,18,UNKNOWN,16,0,0,4,0},
-                          {2400,600,UNKNOWN,19,9,17,4,0,0,0},
-                          {3300,600,UNKNOWN,UNKNOWN,10,18,4,4,0,0},
-                          {3600,600,UNKNOWN,21,UNKNOWN,UNKNOWN,4,0,4,4},
-                          {3900,600,35,22,UNKNOWN,20,0,0,4,0},
-                          {4200,600,UNKNOWN,23,11,21,4,0,0,0},
-                          {4500,600,59,UNKNOWN,4,22,0,4,0,0},
-                          {0,900,92,25,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {300,900,37,UNKNOWN,UNKNOWN,24,0,4,4,0},
-                          {600,900,38,27,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {900,900,39,UNKNOWN,UNKNOWN,26,0,4,4,0},
-                          {1200,900,UNKNOWN,29,14,UNKNOWN,4,0,0,4},
-                          {1500,900,50,UNKNOWN,UNKNOWN,28,0,4,4,0},
-                          {1800,900,UNKNOWN,31,UNKNOWN,UNKNOWN,4,0,4,4},
-                          {2100,900,UNKNOWN,32,17,30,4,0,0,0},
-                          {2400,900,43,UNKNOWN,UNKNOWN,31,0,4,4,0},
-                          {2700,900,UNKNOWN,34,UNKNOWN,UNKNOWN,4,0,4,4},
-                          {3000,900,45,35,UNKNOWN,33,0,0,4,0},
-                          {3900,900,UNKNOWN,36,21,34,4,0,0,0},
-                          {4200,900,UNKNOWN,UNKNOWN,UNKNOWN,35,4,4,4,0},
-                          {300,1200,85,38,25,UNKNOWN,0,0,0,4},
-                          {600,1200,48,UNKNOWN,26,37,0,4,0,0},
-                          {900,1200,61,40,27,UNKNOWN,0,0,0,4},
-                          {1200,1200,49,UNKNOWN,UNKNOWN,39,0,4,4,0},
-                          {1800,1200,UNKNOWN,42,UNKNOWN,UNKNOWN,4,0,4,4},
-                          {2100,1200,52,43,UNKNOWN,41,0,0,4,0},
-                          {2400,1200,UNKNOWN,44,32,42,4,0,0,0},
-                          {2700,1200,53,UNKNOWN,UNKNOWN,43,0,4,4,0},
-                          {3000,1200,UNKNOWN,46,34,UNKNOWN,4,0,0,4},
-                          {3900,1200,57,47,UNKNOWN,45,0,0,4,0},
-                          {4200,1200,58,UNKNOWN,UNKNOWN,46,0,4,4,0},
-                          {600,1500,UNKNOWN,UNKNOWN,38,UNKNOWN,4,4,0,4},
-                          {1200,1500,UNKNOWN,50,40,UNKNOWN,4,0,0,4},
-                          {1500,1500,62,UNKNOWN,29,49,0,4,0,0},
-                          {1800,1500,63,52,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {2100,1500,UNKNOWN,53,42,51,4,0,0,0},
-                          {2700,1500,UNKNOWN,54,44,52,4,0,0,0},
-                          {3000,1500,65,UNKNOWN,UNKNOWN,53,0,4,4,0},
-                          {3300,1500,82,56,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {3600,1500,77,57,UNKNOWN,55,0,0,4,0},
-                          {3900,1500,UNKNOWN,UNKNOWN,46,56,4,4,0,0},
-                          {4200,1500,67,59,47,UNKNOWN,0,0,0,4},
-                          {4500,1500,68,UNKNOWN,23,58,0,4,0,0},
-                          {600,1800,69,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                          {900,1800,UNKNOWN,62,39,UNKNOWN,4,0,0,4},
-                          {1500,1800,UNKNOWN,UNKNOWN,50,61,4,4,0,0},
-                          {1800,1800,103,64,51,UNKNOWN,0,0,0,4},
-                          {2400,1800,74,65,UNKNOWN,63,0,0,4,0},
-                          {3000,1800,UNKNOWN,UNKNOWN,54,64,4,4,0,0},
-                          {3900,1800,78,67,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {4200,1800,91,UNKNOWN,58,66,0,4,0,0},
-                          {4500,1800,UNKNOWN,UNKNOWN,59,UNKNOWN,4,4,0,4},
-                          {600,2100,94,70,60,UNKNOWN,0,0,0,4},
-                          {900,2100,95,71,UNKNOWN,69,0,0,4,0},
-                          {1200,2100,96,72,UNKNOWN,70,0,0,4,0},
-                          {1500,2100,111,UNKNOWN,UNKNOWN,71,0,4,4,0},
-                          {2100,2100,80,74,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {2400,2100,81,UNKNOWN,64,73,0,4,0,0},
-                          {2700,2100,87,76,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {3000,2100,88,UNKNOWN,UNKNOWN,75,0,4,4,0},
-                          {3600,2100,83,78,56,UNKNOWN,0,0,0,4},
-                          {3900,2100,84,UNKNOWN,66,77,0,4,0,0},
-                          {4500,2100,107,UNKNOWN,UNKNOWN,UNKNOWN,0,4,4,4},
-                          {2100,2400,UNKNOWN,81,73,UNKNOWN,4,0,0,4},
-                          {2400,2400,UNKNOWN,UNKNOWN,74,80,4,4,0,0},
-                          {3300,2400,89,83,55,UNKNOWN,0,0,0,4},
-                          {3600,2400,UNKNOWN,UNKNOWN,77,82,4,4,0,0},
-                          {3900,2400,UNKNOWN,UNKNOWN,78,UNKNOWN,4,4,0,4},
-                          {300,2700,UNKNOWN,UNKNOWN,37,UNKNOWN,4,4,0,4},
-                          {2100,2700,97,87,UNKNOWN,UNKNOWN,0,0,4,4},
-                          {2700,2700,UNKNOWN,88,75,86,4,0,0,0},
-                          {3000,2700,98,UNKNOWN,76,87,0,4,0,0},
-                          {3300,2700,UNKNOWN,90,82,UNKNOWN,4,0,0,4},
-                          {3900,2700,101,UNKNOWN,UNKNOWN,89,0,4,4,0},
-                          {4200,2700,UNKNOWN,UNKNOWN,67,UNKNOWN,4,4,0,4},
-                          {0,3000,117,93,24,UNKNOWN,0,0,0,4},
-                          {300,3000,118,UNKNOWN,UNKNOWN,92,0,4,4,0},
-                          {600,3000,108,95,69,UNKNOWN,0,0,0,4},
-                          {900,3000,109,96,70,94,0,0,0,0},
-                          {1200,3000,110,UNKNOWN,71,95,0,4,0,0},
-                          {2100,3000,104,98,86,UNKNOWN,0,0,0,4},
-                          {3000,3000,105,99,88,97,0,0,0,0},
-                          {3300,3000,112,100,UNKNOWN,98,0,0,4,0},
-                          {3600,3000,113,UNKNOWN,UNKNOWN,99,0,4,4,0},
-                          {3900,3000,116,102,90,UNKNOWN,0,0,0,4},
-                          {4200,3000,106,UNKNOWN,UNKNOWN,101,0,4,4,0},
-                          {1800,3300,UNKNOWN,104,63,UNKNOWN,4,0,0,4},
-                          {2100,3300,UNKNOWN,105,97,103,4,0,0,0},
-                          {3000,3300,UNKNOWN,UNKNOWN,98,104,4,4,0,0},
-                          {4200,3300,123,107,102,UNKNOWN,0,0,0,4},
-                          {4500,3300,124,UNKNOWN,79,106,0,4,0,0},
-                          {600,3600,114,109,94,UNKNOWN,0,0,0,4},
-                          {900,3600,UNKNOWN,UNKNOWN,95,108,4,4,0,0},
-                          {1200,3600,UNKNOWN,UNKNOWN,96,UNKNOWN,4,4,0,4},
-                          {1500,3600,UNKNOWN,112,72,UNKNOWN,4,0,0,4},
-                          {3300,3600,UNKNOWN,113,99,111,4,0,0,0},
-                          {3600,3600,UNKNOWN,UNKNOWN,100,112,4,4,0,0},
-                          {600,3900,119,115,108,UNKNOWN,0,0,0,4},
-                          {3000,3900,120,116,UNKNOWN,114,0,0,4,0},
-                          {3900,3900,UNKNOWN,UNKNOWN,101,115,4,4,0,0},
-                          {0,4200,125,118,92,UNKNOWN,0,0,0,4},
-                          {300,4200,UNKNOWN,UNKNOWN,93,117,4,4,0,0},
-                          {600,4200,UNKNOWN,120,114,UNKNOWN,4,0,0,4},
-                          {3000,4200,UNKNOWN,UNKNOWN,115,119,4,4,0,0},
-                          {3300,4200,UNKNOWN,122,UNKNOWN,UNKNOWN,4,0,4,4},
-                          {3600,4200,126,123,UNKNOWN,121,0,0,4,0},
-                          {4200,4200,127,124,106,122,0,0,0,0},
-                          {4500,4200,UNKNOWN,UNKNOWN,107,123,4,4,0,0},
-                          {0,4500,UNKNOWN,126,117,UNKNOWN,4,0,0,4},
-                          {3600,4500,UNKNOWN,127,122,125,4,0,0,0},
-                          {4200,4500,UNKNOWN,128,123,126,4,0,0,0},
-                          {4500,4500,UNKNOWN,UNKNOWN,UNKNOWN,127,4,4,4,0},
-};
 typedef struct {
     const map_cell_t *    pre_map_data;
     int             sq_data;
@@ -773,10 +187,7 @@ typedef struct {
 
 alt_data_t  inject_map[] = {
     {alt_data, 0x00100d6, sizeof(alt_data)/sizeof(alt_data[0]),                      0, 73, 13, 6, "Sigulda         "},
-    {injectible_data, 0x00000ff, sizeof(injectible_data)/sizeof(injectible_data[0]), 0, 48, 16, 16, "Russian         "},
     {youtube_data, 0x0000c5e6, sizeof(youtube_data)/sizeof(youtube_data[0]),         75, 51, 13, 7,  "YouTube         "},
-    {kankou2003, 0x000000ff, sizeof(kankou2003)/sizeof(kankou2003[0]),               0, 72, 16, 16,  "kankou 2003     "},
-    {world1st, 0x000000ff, sizeof(world1st)/sizeof(world1st[0]),                     0, 74, 16, 16,  "1stworld        "}
 };
 unsigned int inject(unsigned int select) {
 //      data_ptr = (uint32_t*) alt_data;
@@ -790,5 +201,205 @@ unsigned int inject(unsigned int select) {
     data.green_cell_nr  = inject_map[select].map_start_cell;
     data.pathlength     = 0;
     data.sq_init        = inject_map[select].sq_data;
-    return 1;
+    return 0;
+}
+
+// Функция конвертирует данные из программы winmaze в формат лабиринта из линий
+unsigned int  convert_maze(uint8_t * mazfile) {
+    unsigned int ii, jj, index = 0;
+    uint8_t linkarray[16*16];
+    map_cell_t *map_ptr;
+    map_ptr = map;
+    for (jj = 0; jj < 16; jj++) {
+        for (ii = 0; ii < 16; ii++){
+            if ((*mazfile == 0x0a) && ii) {
+                linkarray[ii+(jj*16)] = linkarray[ii-1 + (jj*16)];
+                mazfile++;
+                continue;
+            }
+            if ((*mazfile == 0x05) && jj) {
+                linkarray[ii+(jj*16)] = linkarray[ii + ((jj-1)*16)];
+                mazfile++;
+                continue;
+            }
+
+            linkarray[ii+(jj*16)] = index;
+            map_ptr->coordinate.north = data.cell_step * ii;
+            map_ptr->coordinate.east  = data.cell_step * jj;
+// north
+            if (*mazfile & 0x01) {
+                map_ptr->node_link[0] = UNKNOWN;
+                map_ptr->pass_count[0] = 4;
+            } else {
+                map_ptr->node_link[0] = index+1;
+                map_ptr->pass_count[0] = 0;
+            }
+// east
+            if (*mazfile & 0x02) {
+                map_ptr->node_link[1] = UNKNOWN;
+                map_ptr->pass_count[1] = 4;
+            } else {
+                map_ptr->node_link[1] = linkarray[ii + ((jj+1) * 16)]; // error
+                map_ptr->pass_count[1] = 0;
+            }
+//south
+            if (*mazfile & 0x04) {
+                map_ptr->node_link[2] = UNKNOWN;
+                map_ptr->pass_count[2] = 4;
+            } else {
+                map_ptr->node_link[2] = linkarray[ii-1 + (jj * 16)];
+                map_ptr->pass_count[2] = 0;
+                if (ii) {
+                    map[linkarray[ii-1 + (jj*16)]].node_link[0] = index;
+                }
+            }
+// west
+            if (*mazfile & 0x08) {
+                map_ptr->node_link[3] = UNKNOWN;
+                map_ptr->pass_count[3] = 4;
+            } else {
+                map_ptr->node_link[3] = linkarray[ii + ((jj-1) * 16)];
+                map_ptr->pass_count[3] = 0;
+                if (jj) {
+                    map[linkarray[ii + ((jj-1)*16)]].node_link[1] = index;
+                }
+            }
+            mazfile++;
+            map_ptr++;
+            if (++index > MAX_MAP_SIZE) return 1;
+        }
+    }
+    spi_write_eeprom(ROM_map_addr, (unsigned char *) map, sizeof(map_cell_t)*index);
+    data.map_size       = index;
+    data.red_cell_nr    = 0;
+    data.green_cell_nr  = 0;
+    data.pathlength     = 0;
+    data.sq_init        = 0x000000FF;
+    return 0;
+}
+
+// array size is 256
+const uint8_t APEC88[]  = {
+  0x0e, 0x0a, 0x08, 0x08, 0x0a, 0x0a, 0x0a, 0x08, 0x0a, 0x08, 0x08, 0x0a, 0x0a, 0x0a, 0x08, 0x09,
+  0x0c, 0x0a, 0x03, 0x06, 0x09, 0x0e, 0x08, 0x02, 0x0a, 0x01, 0x05, 0x0e, 0x0a, 0x0a, 0x03, 0x05,
+  0x06, 0x0a, 0x09, 0x0c, 0x03, 0x0c, 0x02, 0x09, 0x0c, 0x03, 0x07, 0x0c, 0x0a, 0x0a, 0x08, 0x03,
+  0x0c, 0x08, 0x01, 0x06, 0x09, 0x06, 0x09, 0x06, 0x03, 0x0c, 0x0a, 0x00, 0x0a, 0x0a, 0x02, 0x09,
+  0x05, 0x05, 0x05, 0x0d, 0x04, 0x0b, 0x06, 0x09, 0x0e, 0x01, 0x0d, 0x06, 0x08, 0x08, 0x09, 0x05,
+  0x06, 0x03, 0x04, 0x02, 0x02, 0x09, 0x0e, 0x02, 0x0a, 0x03, 0x04, 0x09, 0x05, 0x05, 0x07, 0x05,
+  0x0c, 0x09, 0x06, 0x0a, 0x08, 0x03, 0x0c, 0x08, 0x0a, 0x09, 0x05, 0x05, 0x05, 0x06, 0x09, 0x05,
+  0x05, 0x05, 0x0c, 0x09, 0x04, 0x09, 0x05, 0x04, 0x09, 0x05, 0x05, 0x04, 0x03, 0x0c, 0x03, 0x05,
+  0x04, 0x02, 0x03, 0x06, 0x03, 0x07, 0x05, 0x06, 0x03, 0x05, 0x05, 0x05, 0x0d, 0x05, 0x0e, 0x03,
+  0x04, 0x09, 0x0c, 0x0a, 0x0a, 0x0b, 0x06, 0x08, 0x0a, 0x01, 0x05, 0x07, 0x05, 0x06, 0x0a, 0x09,
+  0x07, 0x05, 0x04, 0x0b, 0x0c, 0x0a, 0x09, 0x05, 0x0d, 0x05, 0x06, 0x0a, 0x00, 0x0a, 0x0a, 0x03,
+  0x0d, 0x04, 0x03, 0x0c, 0x03, 0x0d, 0x06, 0x03, 0x05, 0x04, 0x09, 0x0d, 0x06, 0x0a, 0x0a, 0x09,
+  0x04, 0x03, 0x0c, 0x03, 0x0c, 0x01, 0x0d, 0x0d, 0x06, 0x01, 0x05, 0x04, 0x09, 0x0c, 0x08, 0x03,
+  0x04, 0x09, 0x04, 0x0a, 0x03, 0x04, 0x00, 0x02, 0x0b, 0x05, 0x05, 0x05, 0x05, 0x05, 0x04, 0x09,
+  0x05, 0x05, 0x06, 0x0a, 0x0a, 0x03, 0x06, 0x0a, 0x09, 0x06, 0x00, 0x03, 0x06, 0x02, 0x03, 0x05,
+  0x06, 0x02, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x0a, 0x02, 0x0b, 0x06, 0x0a, 0x0a, 0x0a, 0x0a, 0x03
+};
+
+const unsigned char world1st[256] ={
+    0x0e,0x0a,0x09,0x0c,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x08,0x0a,0x0a,0x0a,0x08,0x09,
+    0x0c,0x09,0x05,0x06,0x08,0x0a,0x0a,0x0a,0x0a,0x0b,0x06,0x0a,0x0a,0x0a,0x03,0x05,
+    0x05,0x05,0x05,0x0c,0x02,0x0b,0x0e,0x08,0x0a,0x0a,0x08,0x0a,0x08,0x08,0x09,0x05,
+    0x05,0x04,0x01,0x06,0x08,0x0a,0x09,0x04,0x0a,0x0a,0x00,0x0a,0x03,0x05,0x05,0x05,
+    0x05,0x05,0x04,0x09,0x06,0x09,0x05,0x04,0x0a,0x0a,0x02,0x0a,0x0b,0x05,0x05,0x05,
+    0x05,0x04,0x03,0x06,0x0a,0x02,0x03,0x06,0x0a,0x0a,0x0a,0x0a,0x09,0x05,0x05,0x05,
+    0x05,0x05,0x0d,0x0d,0x0d,0x0c,0x08,0x0a,0x0a,0x0a,0x0a,0x09,0x05,0x05,0x05,0x05,
+    0x06,0x03,0x04,0x01,0x04,0x01,0x05,0x0c,0x09,0x0c,0x08,0x01,0x05,0x05,0x05,0x05,
+    0x0c,0x08,0x01,0x06,0x01,0x05,0x04,0x02,0x03,0x05,0x05,0x05,0x05,0x05,0x05,0x05,
+    0x05,0x05,0x05,0x0d,0x06,0x01,0x05,0x0c,0x0a,0x01,0x05,0x05,0x05,0x05,0x05,0x05,
+    0x05,0x05,0x05,0x04,0x09,0x06,0x03,0x06,0x0a,0x02,0x00,0x03,0x05,0x04,0x03,0x05,
+    0x05,0x04,0x03,0x05,0x05,0x0c,0x0a,0x0a,0x08,0x09,0x04,0x0a,0x01,0x05,0x0d,0x05,
+    0x05,0x05,0x0d,0x05,0x05,0x04,0x0a,0x08,0x03,0x05,0x06,0x0a,0x03,0x05,0x04,0x01,
+    0x05,0x05,0x04,0x01,0x04,0x03,0x0c,0x02,0x0b,0x06,0x08,0x0a,0x0a,0x03,0x05,0x05,
+    0x05,0x06,0x01,0x07,0x06,0x08,0x02,0x0a,0x0a,0x0b,0x06,0x08,0x0a,0x0a,0x00,0x01,
+    0x06,0x0a,0x02,0x0a,0x0a,0x02,0x0b,0x0e,0x0a,0x0a,0x0a,0x02,0x0a,0x0a,0x03,0x07
+};
+
+const unsigned char kankou2003[256] ={
+    0x0e,0x0a,0x0a,0x08,0x0a,0x0a,0x0a,0x08,0x0a,0x0a,0x08,0x0a,0x08,0x0a,0x08,0x09,
+    0x0c,0x0a,0x08,0x02,0x0a,0x0b,0x0f,0x05,0x0e,0x0b,0x06,0x09,0x06,0x09,0x05,0x05,
+    0x04,0x09,0x05,0x0c,0x0b,0x0e,0x0a,0x02,0x08,0x0a,0x0b,0x04,0x0b,0x04,0x01,0x05,
+    0x05,0x05,0x05,0x04,0x0a,0x0a,0x0a,0x09,0x05,0x0c,0x0a,0x03,0x0f,0x05,0x06,0x03,
+    0x05,0x05,0x05,0x06,0x0b,0x0f,0x0d,0x07,0x04,0x03,0x0e,0x08,0x0a,0x03,0x0f,0x0d,
+    0x05,0x05,0x06,0x0a,0x08,0x0a,0x02,0x0a,0x03,0x0e,0x0b,0x06,0x0a,0x0a,0x0a,0x01,
+    0x05,0x06,0x0a,0x09,0x06,0x0a,0x08,0x0b,0x0c,0x0a,0x09,0x0c,0x0a,0x0a,0x09,0x05,
+    0x04,0x08,0x09,0x06,0x0a,0x09,0x05,0x0c,0x01,0x0f,0x05,0x07,0x0e,0x09,0x05,0x05,
+    0x05,0x05,0x04,0x0a,0x09,0x05,0x05,0x06,0x03,0x0f,0x05,0x0d,0x0e,0x03,0x05,0x05,
+    0x05,0x05,0x05,0x0f,0x05,0x05,0x06,0x09,0x0f,0x0c,0x03,0x06,0x0a,0x0a,0x03,0x05,
+    0x05,0x07,0x04,0x0a,0x03,0x06,0x08,0x02,0x09,0x06,0x08,0x0b,0x0e,0x0a,0x0a,0x01,
+    0x04,0x0b,0x05,0x0c,0x0b,0x0f,0x07,0x0d,0x04,0x09,0x06,0x0a,0x0a,0x09,0x0d,0x05,
+    0x06,0x09,0x05,0x04,0x0a,0x0a,0x0a,0x03,0x07,0x06,0x0a,0x09,0x0f,0x05,0x06,0x01,
+    0x0f,0x05,0x05,0x06,0x0b,0x0e,0x0a,0x0a,0x0a,0x0a,0x0b,0x04,0x0b,0x04,0x09,0x05,
+    0x0c,0x03,0x06,0x0a,0x09,0x0d,0x0c,0x0a,0x0a,0x0a,0x0a,0x03,0x0c,0x03,0x06,0x01,
+    0x06,0x0a,0x0a,0x0a,0x02,0x02,0x02,0x0a,0x0a,0x0a,0x0a,0x0a,0x02,0x0a,0x0a,0x03
+};
+
+const unsigned char russian2004[256] ={
+    0x0e,0x0a,0x0a,0x0a,0x09,0x0c,0x0a,0x0a,0x09,0x0c,0x0a,0x0a,0x0a,0x0a,0x0a,0x09,
+    0x0c,0x0a,0x0a,0x0a,0x02,0x02,0x0a,0x09,0x04,0x02,0x08,0x0a,0x09,0x0c,0x09,0x05,
+    0x05,0x0c,0x0a,0x0a,0x0a,0x0a,0x09,0x05,0x05,0x0c,0x02,0x09,0x06,0x03,0x06,0x01,
+    0x05,0x06,0x08,0x0a,0x0a,0x09,0x05,0x05,0x05,0x07,0x0c,0x03,0x0c,0x0a,0x08,0x01,
+    0x06,0x09,0x05,0x0c,0x09,0x05,0x05,0x05,0x05,0x0c,0x01,0x0c,0x02,0x09,0x05,0x05,
+    0x0c,0x01,0x05,0x05,0x05,0x05,0x06,0x03,0x06,0x01,0x05,0x07,0x0e,0x02,0x01,0x07,
+    0x05,0x05,0x05,0x05,0x05,0x04,0x09,0x0e,0x0a,0x03,0x06,0x08,0x09,0x0c,0x02,0x09,
+    0x05,0x05,0x05,0x05,0x05,0x05,0x05,0x0c,0x08,0x0a,0x09,0x05,0x05,0x05,0x0e,0x01,
+    0x05,0x05,0x05,0x05,0x05,0x05,0x05,0x06,0x03,0x0d,0x05,0x05,0x05,0x06,0x08,0x01,
+    0x05,0x06,0x03,0x05,0x05,0x05,0x04,0x0a,0x0a,0x03,0x05,0x05,0x04,0x09,0x05,0x05,
+    0x04,0x0a,0x0a,0x03,0x04,0x03,0x05,0x0c,0x0a,0x08,0x01,0x05,0x05,0x05,0x05,0x05,
+    0x04,0x09,0x0c,0x09,0x05,0x0c,0x01,0x05,0x0c,0x03,0x05,0x05,0x05,0x05,0x05,0x05,
+    0x05,0x05,0x05,0x05,0x05,0x05,0x05,0x05,0x06,0x09,0x05,0x05,0x05,0x05,0x05,0x05,
+    0x05,0x05,0x05,0x05,0x05,0x05,0x06,0x03,0x0c,0x03,0x05,0x05,0x05,0x05,0x05,0x05,
+    0x05,0x06,0x03,0x04,0x02,0x02,0x0a,0x0a,0x02,0x09,0x05,0x06,0x03,0x06,0x03,0x05,
+    0x06,0x0a,0x0a,0x02,0x0a,0x0a,0x0a,0x0a,0x0a,0x03,0x06,0x0a,0x0a,0x0a,0x0a,0x03
+};
+
+
+void map_select(void) {
+    const menuitem_t map_menu_items[] = {
+        {"Erase map       ", 0,  none},
+        {"APEC 88         ", 0,  none},
+        {"1st World       ", 0,  none},
+        {"2003 Kankou     ", 0,  none},
+        {"2004 Russia     ", 0,  none},
+        {"                ", 0,  none},
+        {"Sigulda         ", 0,  none},
+        {"YouTube         ", 0,  none},
+    };
+    switch (do_menu((menuitem_t*) map_menu_items, ((sizeof(map_menu_items)/sizeof(map_menu_items[0]))-1))) {
+    case 0:
+        data.map_size       = 0;
+        data.pathlength     = 0;
+        data.green_cell_nr  = 0;
+        data.red_cell_nr    = 0;
+        break;
+
+    case 1:
+        convert_maze((uint8_t *)APEC88);
+        break;
+
+    case 2:
+        convert_maze((uint8_t *) world1st);
+        break;
+
+    case 3:
+        convert_maze((uint8_t *)kankou2003);
+        break;
+
+    case 4:
+        convert_maze((uint8_t *)russian2004);
+        break;
+
+    case 6:
+        inject(0);
+        break;
+
+    case 7:
+        inject(1);
+        break;
+
+    default:
+        break;
+    }
 }

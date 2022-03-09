@@ -502,10 +502,10 @@ void print_row(instance_t *instance, unsigned int addr, unsigned int addrsize, u
 }
 
 uint32_t fram_rdsr(instance_t *instance, int * none) {
-    uint8_t status_value;
+    unsigned int status_value = 0;
     UNUSED(none);
 
-    if (FRAM_dma_rdsr(&status_value)) return 1;
+    if (FRAM_dma_rdsr((uint8_t*)&status_value)) return 1;
     if (instance->stack_idx < FORTH_STACK_SIZE - 1) {
             instance->stack[instance->stack_idx++] = status_value;
             return 0;
@@ -515,12 +515,12 @@ uint32_t fram_rdsr(instance_t *instance, int * none) {
 }
 
 uint32_t fram_wrsr(instance_t *instance, int * none) {
-    uint8_t status_value;
+    unsigned int  status_value;
     UNUSED(none);
 
     if (instance->stack_idx < 1) return 1;
     status_value = instance->stack[--instance->stack_idx];
-    if (FRAM_dma_wrsr(status_value)) return 1;
+    if (FRAM_dma_wrsr(status_value & 0xFF)) return 1;
     return 0;
 }
 

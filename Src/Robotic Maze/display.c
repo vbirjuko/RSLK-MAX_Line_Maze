@@ -16,8 +16,6 @@
 #include "fonts_oled.h"
 
 unsigned char videobuff[8];
-//unsigned char * volatile buffer_ptr; // do not use!!!!!! only for lcdwrite
-volatile unsigned int buffer_count = 0;
 
 unsigned char buffer[SSD1306_LCDHEIGHT * SSD1306_LCDWIDTH / 8] = { 
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -135,11 +133,10 @@ void static lcdcommandwrite(unsigned char* data_ptr, unsigned int count) {
 */
 
 //#define OBSOLETE
-typedef enum {
-	lcdcommand = 0,
-	lcddata = 1,
-} lcddatacommand ;
 #ifdef OBSOLETE
+unsigned char * volatile buffer_ptr; // do not use!!!!!! only for lcdwrite
+volatile unsigned int buffer_count = 0;
+
 void static lcdwrite(unsigned char* data_ptr, unsigned int count, lcddatacommand dc){
     while (buffer_count || (EUSCI_A3->STATW & UCBUSY)) continue;
     DC = dc; // data
@@ -391,7 +388,7 @@ void show_number(unsigned int number, int decimal) {
 
     if (decimal > 3) decimal = 0;
 
-    while (buffer_count) continue;	// если на экран передаётся буфер - подождём.
+//    while (buffer_count) continue;	// если на экран передаётся буфер - подождём.
 
     scrbuffer_ptr = buffer;
     for (i=0; i<(SSD1306_LCDHEIGHT * SSD1306_LCDWIDTH / 8); i++) {

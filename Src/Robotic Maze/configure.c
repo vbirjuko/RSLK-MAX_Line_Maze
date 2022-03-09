@@ -18,7 +18,7 @@
 #endif
 static unsigned char videobuffer[ROWS*16];
 
-static const  unsigned int base[] = {0, 1, 10, 100, 1000, 10000}, *divider;
+static const  unsigned int base[] = {0, 1, 10, 100, 1000, 10000, 100000}, *divider;
 
 typedef enum {select_mode, edit_mode} mode_t;
 typedef void (*func_ptr)(void);
@@ -26,7 +26,7 @@ typedef void (*func_ptr)(void);
 eedata_t data;
 
 
-void do_menu(menuitem_t* item, unsigned int last_menu_item) {
+unsigned int do_menu(menuitem_t* item, unsigned int last_menu_item) {
 	unsigned int update;
 	int i, k;
     unsigned int j;
@@ -227,7 +227,7 @@ void do_menu(menuitem_t* item, unsigned int last_menu_item) {
 								((func_ptr)item[select].variable)();
 								break;
 							case none:
-								return;
+								return select;
 						}
 						update = 1;
 						break;

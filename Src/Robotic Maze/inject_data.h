@@ -1,6 +1,6 @@
 #ifndef INJECT_DATA_H
 #define INJECT_DATA_H
 
-unsigned int inject(unsigned int select);
+void map_select(void);
 
 #endif

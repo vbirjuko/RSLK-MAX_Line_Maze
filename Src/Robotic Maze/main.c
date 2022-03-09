@@ -39,6 +39,7 @@
 #include "square_maze.h"
 #include "Timer32.h"
 #include "FRAM_Logging.h"
+//#include "ITG3205.h"
 
 volatile unsigned int time, time_delay;
 void Solve_Maze(void);
@@ -98,15 +99,12 @@ int main(void){
         crc_err = calc_crc32((uint8_t*)&data, sizeof(data));
     }
 
-	if (LaunchPad_Input() == 0x03) {
-	    inject(4);
-	    while (LaunchPad_Input() ) continue;
-	}
 
 	Seed(data.lefthand);
 	ADC0_InitSWTriggerCh21();
 	i2c_master_init();
 	kbd_init();
+//	ITG3205_Init();
 	Bump_Init();
 	Motor_Init();
 	color_sensor_init();
@@ -114,7 +112,14 @@ int main(void){
 	UART0_Init();
 	FRAM_Logging_Init();
 	display_init();
+//	ssd1351_Init();
 	UART1_Init();
+
+	if (LaunchPad_Input() == 0x03) {
+        while (LaunchPad_Input() ) continue;
+        map_select();
+    }
+
 #ifdef RSLK_MAX
 	Blinker_Init();
 #endif
@@ -133,6 +138,7 @@ int main(void){
 
 	while(1){
 		const menuitem_t main_menu_items[] = {
+//		    {"Test ITG3205    ", TestTurn,       execute},
 		    {"test square     ", test_sq_maze,  execute},
 		    {"Speed Play      ", SpeedPlay,     execute},
             {"Solve Maze      ", Solve_Maze, 	execute},

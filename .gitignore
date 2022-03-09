@@ -2,3 +2,8 @@
 datasheets/TCS34725.pdf
 datasheets/ti-rslk-max-chassis-board-v1.0-schematic.pdf
 datasheets/veml6030.pdf
+Src/Robotic Maze/ITG3205.h
+Src/Robotic Maze/ITG3205.c
+Src/Robotic Maze/Adafruit_SSD1351.h
+Src/Robotic Maze/display_ss1351.c
+Src/Robotic Maze/display_ssd1351.c

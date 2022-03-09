@@ -5,8 +5,15 @@
 #include "Adafruit_SSD1306.h"
 #include "maze.h"
 
+
+typedef enum {
+    lcdcommand = 0,
+    lcddata = 1,
+} lcddatacommand ;
+
 //extern unsigned char videobuff[8];
 extern unsigned char buffer[SSD1306_LCDHEIGHT * SSD1306_LCDWIDTH / 8];
+
 
 void display_bcd(int number, int threshold);
 void print_dump(char *pData);
@@ -27,6 +34,10 @@ unsigned int num2str(int x, char* string);
 void Draw_Map(void);
 void ColorSensorTest(uint16_t * colors, unsigned int new);
 void ColorSensorTestHSI(uint16_t * colors, unsigned int new);
+
+void ssd1351_Init(void);
+void setAddrWindow(unsigned int x1, unsigned int y1,
+                   unsigned int w, unsigned int h);
 
 void line_test (void);
 #endif
