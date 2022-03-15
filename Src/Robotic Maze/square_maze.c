@@ -260,7 +260,7 @@ static rotation_dir_t SelectTurn(unsigned int unavailable_directions) {
 
     unsigned int  i, turn_index, result[3], min_result = 0xffffFFFF, min_index = 0;
     coordinate_t next_possible;
-    bearing_dir_t try_bearing;
+    unsigned int try_bearing;
 
     turn_index = ((unsigned int)data.lefthand < 6u) ? data.lefthand : Rand() % 6;
 
@@ -280,7 +280,7 @@ static rotation_dir_t SelectTurn(unsigned int unavailable_directions) {
                         try_bearing = (bearing_dir_t)((my_bearing + right) & TURN_MASK);
                         break;
                 }
-                update_coordinate(&next_possible, try_bearing);
+                update_coordinate(&next_possible, (bearing_dir_t) try_bearing);
                 result[i] = ((next_possible.north > 7) ? (next_possible.north - 8)*(next_possible.north - 8) : (7 - next_possible.north)*(7 - next_possible.north)) +
                         ((next_possible.east  > 7) ? (next_possible.east  - 8)*(next_possible.east  - 8) : (7 - next_possible.east)*(7 - next_possible.east));
             } else {
@@ -527,23 +527,17 @@ void solve_sq_maze(void) {
             //                }
             //            }
 
-//#define OLD
-#ifndef OLD
+
             if (skiplevel != 1) {
-#else
-            if ((turn_direction == back)) { // || (skiplevel == 2) ) {
-                unsigned int jj, /*back_length = 0,*/ back_step;
-                rotation_dir_t virtual_turn_direction;
-#endif
                 // если возвращаемся назад, то давайте посмотрим, как далеко нужно идти назад.
                 // для этого возвращаемся по жёлтому пути и ищем ячейку у которой есть
-                // зелёый проход (count == 0). После чего расчитываем до той ячейки кратчайший маршрут
+                // зелёный проход (count == 0). После чего расчитываем до той ячейки кратчайший маршрут
                 // и перемещаемся туда.
 
                 coordinate_t back_trace = my_coordinate;
 
                 back_bearing = my_bearing;
-#ifndef OLD
+
                 do {
                     back_bearing += turn_direction;
                     back_bearing &= TURN_MASK;
@@ -590,29 +584,6 @@ void solve_sq_maze(void) {
                     if (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+straight) & TURN_MASK] >= skiplevel) unavailable |= north_wall;
                     turn_direction = SelectTurn(unavailable);
                 } while(1);
-#else
-                do {
-                    back_step = data.length[data.pathlength]/data.cell_step;
-                    //                    back_length += back_step;
-                    while (back_step--) {
-                        maze_count[back_trace.north*MAZE_SIDE+back_trace.east][my_next_possible_bearing] += 1;
-                        update_coordinate(&back_trace, (bearing_dir_t)my_next_possible_bearing);
-                        maze_count[back_trace.north*MAZE_SIDE+back_trace.east][(my_next_possible_bearing + back) & TURN_MASK] += 1;
-                    }
-                    data.pathlength--;
-                    virtual_turn_direction = (rotation_dir_t)data.path[data.pathlength];
-                    back_bearing -= virtual_turn_direction;
-                    back_bearing &= TURN_MASK;
-                    if (virtual_turn_direction == left) virtual_turn_direction = right;
-                    else if (virtual_turn_direction == right) virtual_turn_direction = left;
-                    my_next_possible_bearing += virtual_turn_direction;
-                    my_next_possible_bearing &= TURN_MASK;
-                    for (jj=0; jj<4; jj++){
-                        if (maze_count[back_trace.north*MAZE_SIDE+back_trace.east][jj] == 0) break;
-                    }
-                    if (jj < 4) break;
-                } while (data.pathlength);
-#endif
                 // Телепортируемся
                 draw_maze(my_coordinate, &global_path);
                 LaunchPad_Output(BLUE);

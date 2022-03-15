@@ -24,45 +24,54 @@ volatile int LeftSteps = 0, RightSteps = 0;
 
 void tachometerRightInt(uint16_t currenttime){
     static uint32_t Tachometer_FirstRightTime, Tachometer_SecondRightTime = 0;
-	Tachometer_FirstRightTime = Tachometer_SecondRightTime & 0xFFFF;
-	Tachometer_SecondRightTime = currenttime + ((RollOverRight) << 16);
-	if(ENC_Right_B){
-		// Encoder B is high, so this is a step forward
-		RightSteps++;
-		TachRight.Dir = FORWARD;
-	} else {
-		// Encoder B is low, so this is a step backward
-		RightSteps--;
-		TachRight.Dir = REVERSE;
-	}
-	if (RollOverRight < 2) {
-		TachRight.Period = Tachometer_SecondRightTime - Tachometer_FirstRightTime;
-	} else {
-		TachRight.Dir = STOPPED;
-		TachRight.Period = 0x20000; //65535;
-	}
-	RollOverRight = 0; 
-
-	if (EventCountRight++ == 0) RightPeriodInc = TachRight.Period;
-	else {
-			RightPeriodInc += TachRight.Period;
-			TachRight.Period = RightPeriodInc / EventCountRight;
-	}
+    Tachometer_FirstRightTime = Tachometer_SecondRightTime & 0xFFFF;
+    Tachometer_SecondRightTime = currenttime + ((RollOverRight) << 16);
+    if(ENC_Right_B){
+// Encoder B is high, so this is a step forward
+        RightSteps++;
+        TachRight.Dir = FORWARD;
+    } else {
+// Encoder B is low, so this is a step backward
+        RightSteps--;
+        TachRight.Dir = REVERSE;
+    }
+    if (RollOverRight < 2) {
+        TachRight.Period = Tachometer_SecondRightTime - Tachometer_FirstRightTime;
+    } else {
+        TachRight.Dir = STOPPED;
+        TachRight.Period = 0x20000; //65535;
+    }
+    RollOverRight = 0;
+#ifdef VARIANT1
+    if (EventCountRight++ == 0) RightPeriodInc = TachRight.Period;
+    else {
+        RightPeriodInc += TachRight.Period;
+        TachRight.Period = RightPeriodInc / EventCountRight;
+    }
+#else
+#define LPF_FACTOR  3
+    static unsigned int PeriodBuff[1 << LPF_FACTOR] = {0}, PeriodSum = 0, PeriodIndex=0;
+    PeriodSum -= PeriodBuff[PeriodIndex];
+    PeriodBuff[PeriodIndex] =TachRight.Period;
+    PeriodSum +=  PeriodBuff[PeriodIndex++];
+    PeriodIndex &= (1 << LPF_FACTOR) - 1;
+    TachRight.Period = PeriodSum >> LPF_FACTOR;
+#endif
 }
 
 void tachometerLeftInt(uint16_t currenttime){
     static uint32_t Tachometer_FirstLeftTime, Tachometer_SecondLeftTime = 0;
     Tachometer_FirstLeftTime = Tachometer_SecondLeftTime & 0xFFFF;
     Tachometer_SecondLeftTime = currenttime + ((RollOverLeft) << 16);
-		if(ENC_Left_B){
-			// Encoder B is high, so this is a step forward
-			LeftSteps++;
-			TachLeft.Dir = FORWARD;
-		} else {
-			// Encoder B is low, so this is a step backward
-			LeftSteps--;
-			TachLeft.Dir = REVERSE;
-		}
+    if(ENC_Left_B){
+// Encoder B is high, so this is a step forward
+        LeftSteps++;
+        TachLeft.Dir = FORWARD;
+    } else {
+// Encoder B is low, so this is a step backward
+        LeftSteps--;
+        TachLeft.Dir = REVERSE;
+    }
     if (RollOverLeft < 2) {
         TachLeft.Period = Tachometer_SecondLeftTime - Tachometer_FirstLeftTime;
     } else {
@@ -70,12 +79,20 @@ void tachometerLeftInt(uint16_t currenttime){
         TachLeft.Period = 0x20000; //65535;
     }
     RollOverLeft = 0;
-
-		if (EventCountLeft++ == 0) LeftPeriodInc = TachLeft.Period;
-		else {
-			LeftPeriodInc += TachLeft.Period;
-			TachLeft.Period = LeftPeriodInc / EventCountLeft;
-	}
+#ifdef VARIANT1
+    if (EventCountLeft++ == 0) LeftPeriodInc = TachLeft.Period;
+    else {
+        LeftPeriodInc += TachLeft.Period;
+        TachLeft.Period = LeftPeriodInc / EventCountLeft;
+    }
+#else
+    static unsigned int PeriodBuff[1 << LPF_FACTOR] = {0}, PeriodSum = 0, PeriodIndex=0;
+    PeriodSum -= PeriodBuff[PeriodIndex];
+    PeriodBuff[PeriodIndex] = TachLeft.Period;
+    PeriodSum +=  PeriodBuff[PeriodIndex++];
+    PeriodIndex &= (1 << LPF_FACTOR) - 1;
+    TachLeft.Period = PeriodSum >> LPF_FACTOR;
+#endif
 }
 
 void tachometrInt(void) {
