@@ -390,7 +390,8 @@ void TestMotor(void) {
 }
 
 
-void TestTachom(void)				{
+void TestTachom(void) {
+    Tach_stru_t Left, Right;
 	unsigned int keyb, str_len, i;
 	char clipboard[12], 
 		left_str[17] = "Left ...........\0", 
@@ -415,14 +416,31 @@ void TestTachom(void)				{
 				return;
 		}
 
+		Tachometer_Get(&Left, &Right);
+        switch (Left.Dir) {
+            case FORWARD:
+                left_str[15] = 'F'; break;
+            case REVERSE:
+                left_str[15] = 'R'; break;
+            case STOPPED:
+                left_str[15] = 'S'; break;
+        }
 		str_len = num2str(LeftSteps, clipboard);
-		for (i = 15; str_len--; i--) {
+		for (i = 14; str_len--; i--) {
 			left_str[i] = clipboard[str_len];
 		}
 		while (i > 4) left_str[i--] = ' ';
 
+        switch (Right.Dir) {
+            case FORWARD:
+                right_str[15] = 'F'; break;
+            case REVERSE:
+                right_str[15] = 'R'; break;
+            case STOPPED:
+                right_str[15] = 'S'; break;
+        }
 		str_len = num2str(RightSteps, clipboard);
-		for (i = 15; str_len--; i--) {
+		for (i = 14; str_len--; i--) {
 			right_str[i] = clipboard[str_len];
 		}
 		while (i > 4) right_str[i--] = ' ';

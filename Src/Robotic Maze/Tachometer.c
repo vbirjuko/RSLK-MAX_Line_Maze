@@ -26,7 +26,7 @@ void tachometerRightInt(uint16_t currenttime){
     static uint32_t Tachometer_FirstRightTime, Tachometer_SecondRightTime = 0;
     Tachometer_FirstRightTime = Tachometer_SecondRightTime & 0xFFFF;
     Tachometer_SecondRightTime = currenttime + ((RollOverRight) << 16);
-    if(ENC_Right_B){
+    if (ENC_Right_B){
 // Encoder B is high, so this is a step forward
         RightSteps++;
         TachRight.Dir = FORWARD;
@@ -63,7 +63,7 @@ void tachometerLeftInt(uint16_t currenttime){
     static uint32_t Tachometer_FirstLeftTime, Tachometer_SecondLeftTime = 0;
     Tachometer_FirstLeftTime = Tachometer_SecondLeftTime & 0xFFFF;
     Tachometer_SecondLeftTime = currenttime + ((RollOverLeft) << 16);
-    if(ENC_Left_B){
+    if (ENC_Left_B){
 // Encoder B is high, so this is a step forward
         LeftSteps++;
         TachLeft.Dir = FORWARD;
