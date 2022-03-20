@@ -17,6 +17,8 @@
                 
 <li><b>BLINKER_SEGMENT</b> - what speed is selected running on maze segment. Just for debug purposes.
   
+<b>FRAM_SIZE=(256*1024)</b> - optional. If connect SPI FRAM to P1.5, P1.6, P1.7, P3.0 define it size in bytes, so logging will be written in FRAM.
+  
 <b>COLOR_SENSOR_ON_BACK</b> - if color sensor is placed on robots back. Defines when check deadend color: before turn (if not defined) or after (if defined).
   
 
