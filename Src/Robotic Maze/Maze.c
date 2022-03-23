@@ -34,7 +34,8 @@
 rotation_dir_t path[MAX_PATH_LENGTH];
 int length[MAX_PATH_LENGTH];
 
-#define CURRENT_DISTANCE	((LeftSteps + RightSteps) * 11 / 36)  // 220mm per 360 tick of two wheels.
+// 220mm per 360 tick of two wheels.
+#define CURRENT_DISTANCE	((LeftSteps + RightSteps) * 11 / 36)
 
 map_cell_t map[MAX_MAP_SIZE];
 uint8_t	where_am_i = 0, old_ret = 0;
@@ -691,7 +692,7 @@ full_restart:
 		// now detect if we have straight segment
 		if ((photo_sensor & ((1u << 2) | (1u << 3) | (1u << 4) | (1u << 5))) && !blind) {
 			available |= STRAIGHT_MASK; 
-			if (where_am_i)  where_am_i = 0x01 | available;
+			if (where_am_i)  where_am_i = Solve | available;
 		}
 
         // Теперь выполняем "выравнивание" робота в координатной сетке ортогонального лабиринта

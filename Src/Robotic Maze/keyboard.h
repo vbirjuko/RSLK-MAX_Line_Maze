@@ -2,8 +2,7 @@
 #define _KEYBOARD_H_
 // Функция опроса клавиатуры
 
-// SCANPERSECOND задаёт все временные задержки, а так же частоту запуска АЦП.
-#define SCANPERSECOND 2000
+#include "resources.h"
 
 #define I2C_PCA_ADDR	0x82
 enum pca_reg {

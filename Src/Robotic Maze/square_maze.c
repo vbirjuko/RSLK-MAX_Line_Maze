@@ -439,6 +439,7 @@ void solve_sq_maze(void) {
     while (dma_copy_busy) continue;
 
     do {
+        unsigned int recalculate = 0;
         maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][my_bearing] += 1;
         steps = make_step();
         data.length[data.pathlength] = steps * data.cell_step;  // до поворота
@@ -454,7 +455,7 @@ void solve_sq_maze(void) {
         update_coordinate(&my_coordinate, my_bearing);
         maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+back) & TURN_MASK] += 1;
         current_cell_walls = get_walls();
-        update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
+        recalculate |= update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
         draw_maze(my_coordinate, &global_path);
 
         // варианты нахождения финиша:
@@ -473,7 +474,8 @@ void solve_sq_maze(void) {
         }
         delay_us(1000000);
 
-        if (finish_found) {
+        if (finish_found  & recalculate) {
+            recalculate = 0;
             unsigned int opencost =search_way_simple(start, finish, (bearing_dir_t)((data.sq_init & 0xF0000) >> 16), 1);
             if (opencost >= search_way_simple(start, finish, (bearing_dir_t)((data.sq_init & 0xF0000) >> 16), 0)) {
                 LaunchPad_Output(GREEN | BLUE);

@@ -28,6 +28,7 @@
     #include "BLE_cc2560.h"
     #include "AP.h"
 #endif
+#include "resources.h"
 #include "SPI_EEProm.h"
 #include "UART1.h"
 #include "commandline.h"
@@ -111,8 +112,8 @@ int main(void){
 	Reflectance_Init_with_Timer(data.threshold);
 	UART0_Init();
 	FRAM_Logging_Init();
-	display_init();
-//	ssd1351_Init();
+//	display_init();
+	ssd1351_Init();
 	UART1_Init();
 
 	if (LaunchPad_Input() == 0x03) {

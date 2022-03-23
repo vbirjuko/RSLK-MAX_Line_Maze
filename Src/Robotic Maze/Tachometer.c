@@ -1,4 +1,5 @@
 #include "msp.h"
+#include "resources.h"
 #include "TA3InputCapture.h"
 #include "Tachometer.h"
 

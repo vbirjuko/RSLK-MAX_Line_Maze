@@ -8,6 +8,9 @@
 #ifndef FRAM_LOGGING_H
 #define FRAM_LOGGING_H
 
+#include "resources.h"
+#include "Maze.h"
+
 // Define FRAM size in kilobytes.
 // From this size depends how many records to write.
 // now 22 bytes per record writes 400 times in second gives approx. 30 seconds.
@@ -16,7 +19,6 @@
 #define FRAM_SIZE   (0)
 #endif
 
-#include "Maze.h"
 
     typedef struct data_buffer {
         uint32_t Time;              // 4

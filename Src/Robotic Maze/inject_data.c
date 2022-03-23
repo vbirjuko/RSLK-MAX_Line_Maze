@@ -397,14 +397,14 @@ const unsigned char EURO_V59[256] ={
 
 void map_select(void) {
     const menuitem_t map_menu_items[] = {
-        {"Erase map       ", 0,  none},
-        {"APEC 88         ", 0,  none},
-        {"1st World       ", 0,  none},
-        {"2003 Kankou     ", 0,  none},
-        {"2004 Russia     ", 0,  none},
-        {"Euro-V59        ", 0,  none},
-        {"Sigulda         ", 0,  none},
-        {"YouTube         ", 0,  none},
+        {"Erase map       ", 0,  none}, // 0
+        {"APEC 88         ", 0,  none}, // 1
+        {"1st World       ", 0,  none}, // 2
+        {"2003 Kankou     ", 0,  none}, // 3
+        {"2004 Russia     ", 0,  none}, // 4
+        {"Euro-V59        ", 0,  none}, // 5
+        {"Sigulda         ", 0,  none}, // 6
+        {"YouTube         ", 0,  none}, // 7
     };
     switch (do_menu((menuitem_t*) map_menu_items, ((sizeof(map_menu_items)/sizeof(map_menu_items[0]))-1))) {
     case 0:

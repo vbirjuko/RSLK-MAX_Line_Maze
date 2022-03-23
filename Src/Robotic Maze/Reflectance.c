@@ -59,6 +59,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 
 #include <stdint.h>
 #include "msp432.h"
+#include "resources.h"
 #include "Clock.h"
 #include "TimerA1.h"
 #include "main.h"

@@ -1,4 +1,6 @@
 #include "msp.h"
+#include "resources.h"
+
 #ifdef SSD1306
 #include "Adafruit_SSD1306.h"
 #elif defined SH1106

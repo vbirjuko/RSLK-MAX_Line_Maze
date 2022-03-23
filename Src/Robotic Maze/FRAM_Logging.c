@@ -41,16 +41,14 @@ void FRAM_Logging_Init(void) {
 	      // bits5-2    reserved
 	      // bit1       UCSTEM = 1; UCSTE pin enables slave
 	      // bit0       UCSWRST = 1; reset enabled
-//	  EUSCI_A3->CTLW0 = 0xAD83;
+//	  EUSCI_B0->CTLW0 = 0xAD83;
 	  EUSCI_B0->CTLW0 = EUSCI_B_CTLW0_CKPH | EUSCI_B_CTLW0_MSB | EUSCI_B_CTLW0_MST |
 			  	  	  	EUSCI_B_CTLW0_SYNC | EUSCI_B_CTLW0_SSEL__SMCLK |
 						EUSCI_B_CTLW0_MODE_2 | EUSCI_B_CTLW0_STEM | EUSCI_B_CTLW0_SWRST;
 	      // set the baud rate for the eUSCI which gets its clock from SMCLK
 	      // Clock_Init48MHz() from ClockSystem.c sets SMCLK = HFXTCLK/4 = 12 MHz
 	      // if the SMCLK is set to 12 MHz, divide by 3 for 4 MHz baud clock
-	  EUSCI_A3->BRW = 0x1;
-	      // modulation is not used in SPI mode, so clear UCA3MCTLW
-	  EUSCI_A3->MCTLW = 0;
+	  EUSCI_B0->BRW = 0x1;
 	  P1->SEL0 |=  (UCB0SOMI|UCB0SIMO|UCB0CLK); 	//
 	  P1->SEL1 &= ~(UCB0SOMI|UCB0SIMO|UCB0CLK);	// configure P1.7, P1.6, and P1.5 as primary module function
 	  FRAM_CS_PORT->SEL0 &= ~(1ul << FRAM_CS_PIN);

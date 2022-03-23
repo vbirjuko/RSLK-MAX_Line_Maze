@@ -8,6 +8,36 @@
 #ifndef RESOURCES_H_
 #define RESOURCES_H_
 
+// Define robot configuration
+// RSLK_MAX - mandatory. If not defined use classic RSLK configuration
+// which may conflict with other modules
+#define RSLK_MAX
+
+// Used display.  Alter to SH1106 if necessary
+#define SSD1306
+
+// display orientation. Define if display show picture in wrong orientation
+#define UPSIDEDOWN
+
+// Looks mandatory too. Defines keyboard connection thru PCA9536. If not defined
+// assume keys connected to MC port, what may conflict with other modules
+#define PCA
+
+// define if you have SPI FRAM connected to port P1.5-1.7 and P3.0 to make logging
+// If not defined (or size equal 0) logging will make to SPI EEPROM which hold configuration
+#define FRAM_SIZE       (256*1024)
+
+// define if color sensor is placed on robots back.
+// Defines when check dead end color: before turn (if not defined) or after (if defined).
+#define COLOR_SENSOR_ON_BACK
+
+//  what should show blinker LEDs.
+// BLINKER_MOTOR - front yellow signalize motor STOP state - rear red if motor powered backward.
+// BLINKER_SEGMENT - what speed is selected running on maze segment. Just for debug purposes.
+#define BLINKER_SEGMENT
+
+// SCANPERSECOND задаёт все временные задержки, а так же частоту запуска АЦП.
+#define SCANPERSECOND 2000
 
 // IRQ priorities
 
