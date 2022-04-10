@@ -178,11 +178,11 @@ void run_segment(speed_t runspeed, unsigned int distance) {
             de_dt = data.k_diff*(track_error - prev_track_error);
             prev_track_error = track_error;
 
-            sigma_error += (track_error * data.k_integral) >> 10;
-            if (sigma_error > 2048) sigma_error = 2048;
-            if (sigma_error < -2048) sigma_error = -2048;
+            sigma_error += track_error;
+            if (sigma_error > 8192) sigma_error = 8192;
+            if (sigma_error < -8192) sigma_error = -8192;
 
-            result = data.k_error*track_error + de_dt + sigma_error;
+            result = data.k_error*track_error + de_dt + ((sigma_error * data.k_integral) >> 10);
 
 //            if (result < -data.maxmotor) result = -data.maxmotor;
 //            else if (result > data.maxmotor) result = data.maxmotor;

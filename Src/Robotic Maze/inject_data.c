@@ -229,12 +229,12 @@ unsigned int  convert_maze(uint8_t * mazfile) {
     map_ptr = map;
     for (jj = 0; jj < 16; jj++) {
         for (ii = 0; ii < 16; ii++){
-            if ((*mazfile == 0x0a) && ii) {
+            if (((*mazfile & 0x0F) == 0x0a) && ii) {
                 linkarray[ii+(jj*16)] = linkarray[ii-1 + (jj*16)];
                 mazfile++;
                 continue;
             }
-            if ((*mazfile == 0x05) && jj) {
+            if (((*mazfile & 0x0F) == 0x05) && jj) {
                 linkarray[ii+(jj*16)] = linkarray[ii + ((jj-1)*16)];
                 mazfile++;
                 continue;

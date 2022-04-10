@@ -58,7 +58,7 @@
 // ********** TIMER_32 ****************
 #define T32_INT1_Priority   4
 
-// ********** EUSCI
+// ********** EUSCI *******************
 // EUSCI_A0 UART0 (USB_CDC)
 #define EUSCIA0_Priority    4
 // EUSCI_A2 UART1 (BGX)

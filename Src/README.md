@@ -1,4 +1,4 @@
--To compile this project You must define some symbols:
+-To compile this project You must define some symbols. Now this configuration placed in resources.h, so check it there.
 
 <b>RSLK_MAX</b> - mandatory ;-). Because this code was started with Classic RSLK and has old port and pin definitions
 

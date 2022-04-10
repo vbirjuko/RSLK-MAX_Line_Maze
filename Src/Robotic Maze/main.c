@@ -1,6 +1,3 @@
-// define RSLK_MAX SSD1306 PCA WITH_BGX BLINKER_SEGMENT UPSIDEDOWN
-
-
 
 #include "msp.h"
 #include "main.h"
