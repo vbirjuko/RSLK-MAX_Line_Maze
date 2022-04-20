@@ -37,8 +37,8 @@ void data_log_init(void) {
         do {
             delay_us(200*500);
             erase_buffer[0] = eeprom_read_status_register;
-            spi_exchange(erase_buffer, 1);
-        } while (erase_buffer[0] & EEPROM_STATUS_WIP);
+            spi_exchange(erase_buffer, 2);
+        } while (erase_buffer[1] & EEPROM_STATUS_WIP);
         eeprom_address += 0x10000;
         if (eeprom_address > LOG_END_ADDRESS) break;
     }
@@ -90,8 +90,8 @@ void data_log(uint16_t datatowrite, unsigned int write_enable) {
     case 3:
         if (DMA_getChannelMode(6) != UDMA_MODE_STOP) break;
         spi_buffer[current_buffer ^ 1].command[0] = eeprom_read_status_register;
-        spi_exchange(spi_buffer[current_buffer ^ 1].command, 1);
-        if (spi_buffer[current_buffer ^ 1].command[0] & EEPROM_STATUS_WIP) break;
+        spi_exchange(spi_buffer[current_buffer ^ 1].command, 2);
+        if (spi_buffer[current_buffer ^ 1].command[1] & EEPROM_STATUS_WIP) break;
         if (log_watermark < buffer_count) log_watermark = buffer_count;
         log_state = 0;
         break;
@@ -135,8 +135,8 @@ void data_log_finish(void) {
             while (!photo_data_ready) continue;
             photo_data_ready = 0;
             spi_buffer[0].command[0] = eeprom_read_status_register;
-            spi_exchange(spi_buffer[0].command, 1);
-        } while (spi_buffer[0].command[0] & EEPROM_STATUS_WIP);
+            spi_exchange(spi_buffer[0].command, 2);
+        } while (spi_buffer[0].command[1] & EEPROM_STATUS_WIP);
         data.log_watermark = log_watermark;
 
 }
