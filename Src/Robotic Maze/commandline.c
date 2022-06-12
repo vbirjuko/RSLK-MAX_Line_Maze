@@ -921,9 +921,10 @@ void parse_string(instance_t *instance) {
             unsigned int iserror = 0;
             input_num = 0;
             while ((*in_ptr != ' ') && (*in_ptr != '\0')) {
-                digit = *in_ptr - '0';
-                if (digit > 9) digit -= ('@'-'9');
-                if (digit < instance->base) {
+                if ((*in_ptr >= '0') && (*in_ptr <= '9')) digit = *in_ptr - '0';
+                else if (*in_ptr > '@') digit = *in_ptr - 'A' + 10;
+                else iserror = 1;
+                if (!iserror && (digit < instance->base)) {
                     input_num = input_num*instance->base + digit;
                     in_ptr++;
                 } else {

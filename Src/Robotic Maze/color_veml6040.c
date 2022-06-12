@@ -40,7 +40,7 @@ unsigned int color_sensor_init(void) {
 	return 1;
 }
 
-t_color check_color(void) {
+color_t check_color(void) {
 	unsigned int i, valid_data;
 // unsigned int bitfield = 0;
 	
@@ -99,3 +99,36 @@ t_color check_color(void) {
 		}
 	}
 }
+
+#include "keyboard.h"
+#include "LaunchPad.h"
+#include "display.h"
+
+void TestColor(void) {
+    uint16_t color_array[4] = {0, 0, 0, 0};
+    unsigned int i;
+    color_t field_test_color;
+
+    ColorSensorTestHSI(color_array, 1);
+    while (kbdread() != KEY_DOWN) {
+        field_test_color = check_color();
+//        copy_data_dma((uint8_t *)color_sensors, (uint8_t *)color_array, sizeof(color_array));
+        switch (field_test_color) {
+            case red:       LaunchPad_Output(RED); break;
+            case green:     LaunchPad_Output(GREEN); break;
+            case blue:      LaunchPad_Output(BLUE); break;
+            case yellow:    LaunchPad_Output(RED  | GREEN); break;
+            case cyan:      LaunchPad_Output(BLUE | GREEN); break;
+            case magenta:   LaunchPad_Output(BLUE | RED); break;
+            case white:     LaunchPad_Output(BLUE | RED | GREEN); break;
+            case black:     LaunchPad_Output(0x00); break;
+        }
+        for (i=0; i<4; i++) {
+            color_array[i] = color_sensors[i];
+        }
+//      while(dma_copy_busy) WaitForInterrupt();
+        ColorSensorTestHSI(color_array, 0);
+    }
+    LaunchPad_Output(0);
+}
+

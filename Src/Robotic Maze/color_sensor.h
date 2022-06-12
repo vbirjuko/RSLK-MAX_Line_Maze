@@ -18,11 +18,13 @@ typedef enum {
     magenta,
     cyan,
     white
-} t_color;
+} color_t;
 
 
 unsigned int color_sensor_init(void);
-t_color check_color(void);
+color_t check_color(void);
 extern volatile uint16_t color_sensors[4];
+
+void TestColor(void);
 
 #endif /* COLOR_SENSOR_H_ */
