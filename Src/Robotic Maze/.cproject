@@ -190,7 +190,7 @@
 						</tool>
 					</fileInfo>
 					<sourceEntries>
-						<entry excluding="ITG3205.c|color_tcs34725.c|color_sensor.c|Bump.c|Motor.c|keyb_pca9536.c|keb_cp9536.c|BLE_cc2560" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="color_tcs34725.c|ITG3205.c|color_sensor.c|Bump.c|Motor.c|keyb_pca9536.c|keb_cp9536.c|BLE_cc2560" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

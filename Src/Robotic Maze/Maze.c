@@ -89,11 +89,11 @@ void run_segment(speed_t runspeed, unsigned int distance) {
         int brakepath1, brakepath2;
         if (maxspeed >=  data.minspeed) {
             // Расстояние, необходимое для торможения, если максимальная скорость не набирается:
-            //  (220mm/100) * (V^2 - v^2) / (4 * a * 400*60)  + distance/2
+            //  (220mm/100)^2 * (V^2 - v^2) / (4 * a * 400*60^2)  + distance/2
             brakepath1 = (speed*speed - data.minspeed*data.minspeed)/data.acceleration * 11/480000 + distance/2;
             // Расстояние, необходимое для торможения от максимальной скорости:
-            // (220mm/100) * (V^2 - v^2) / (2 * a * 400*60)
-            brakepath2 = (maxspeed*maxspeed - data.minspeed*data.minspeed)/data.acceleration*11/240000;
+            // (220mm/100)^2 * (V^2 - v^2) / (2 * a * 400*60)
+            brakepath2 = (maxspeed*maxspeed - data.minspeed*data.minspeed)/data.acceleration * 11/240000;
             // используем вариант с самым коротким тормозным путём
             if ((brakepath1 < brakepath2) && (brakepath1 >= 0)) {
                 slowdistance = CURRENT_DISTANCE + distance - data.sensor_offset - brakepath1;
@@ -610,6 +610,13 @@ full_restart:
 		maze_entrance = 0;
 		segment_length = CURRENT_DISTANCE - start_position;
 		start_position = CURRENT_DISTANCE;
+
+        // если указана величина клетки, то подгоняем длину сегмента под этот шаг.
+        if (data.cell_step) {
+          segment_length = ((segment_length + data.cell_step/2) / data.cell_step) * data.cell_step;
+          if (segment_length == 0) segment_length = data.cell_step;
+        }
+
 		update_coordinate(&my_coordinate, segment_length, (bearing_dir_t)move_direction);
 
 		available = 0;
@@ -1564,7 +1571,7 @@ bearing_dir_t make_turn(bearing_dir_t turn_direction) {
     return (bearing_dir_t) (real_bearing &= TURN_MASK);
 }
 
-t_color get_color(void) {
+color_t get_color(void) {
     if (my_position == data.green_cell_nr) return green;
     if (my_position == data.red_cell_nr)    return red;
     return white;

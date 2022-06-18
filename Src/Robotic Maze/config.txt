@@ -1,3 +1,4 @@
+decimal
 Threshold     800 swap !
 MAXspeed      17000 swap !
 MINspeed      10000 swap !
@@ -11,10 +12,10 @@ MotorKprop    135 swap !
 MotorKint     128 swap !
 OnWay         100 swap !
 RunNumber     0 swap !
-PathLength    0 swap !
-MapSize       0 swap !
+PathLength    1 swap !
+MapSize       9 swap !
 StartPoint    0 swap !
-EndPoint      0 swap !
+EndPoint      8 swap !
 IRlevel       31 swap !
 map           0 swap !
 LeftHand      6 swap !
@@ -33,8 +34,8 @@ TurnCost      400 swap !
 CrossCost     0 swap !
 StepCost      200 swap !
 StrAccel      100 swap !
-CellStep      300 swap !
+CellStep      160 swap !
 Volt_calibr   100 swap !
 Bat_low_lvl   63 swap !
-Length_tab    148 swap !
+Length_tab    0 swap !
 Watermark     2 swap !

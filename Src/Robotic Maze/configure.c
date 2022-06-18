@@ -380,3 +380,14 @@ void edit_path(void) {
 	}
 	do_menu((menuitem_t *)segments, menu_length);
 }
+
+unsigned int config_validate(void) {
+  unsigned int result = 0;
+  if (data.cell_step) {
+      if ((data.cell_step*3/4) < data.tolerance) {
+          data.tolerance = data.cell_step*3/4;
+          result = 1;
+      }
+  }
+  return result;
+}

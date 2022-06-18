@@ -395,7 +395,30 @@ unsigned int do_prediction(coordinate_t from_coordinate, bearing_dir_t possible_
     maze_count[from_coordinate.north*MAZE_SIDE + from_coordinate.east][possible_bearing] += 2;
 
     return 1;
+}
 
+#define swap(a, b) \
+(((a) ^= (b)), ((b) ^= (a)), ((a) ^= (b))) ///< No-temp-var swap operation
+
+void do_transpose(unsigned int count) {
+    unsigned int aa, bb, cc, dd, ii;
+    aa = (maze[0] & 0xAA) >> 1;
+    bb = (maze[0] & 0x55) << 1;
+    maze[0] = aa | bb;
+    swap(maze_count[0][0],maze_count[0][1]);
+    swap(maze_count[0][2],maze_count[0][3]);
+    for (ii = 1; ii <= count; ii++) {
+        aa = (maze[ii] & 0xAA) >> 1;
+        bb = (maze[ii] & 0x55) << 1;
+        cc = (maze[MAZE_SIDE*ii] & 0xAA) >> 1;
+        dd = (maze[MAZE_SIDE*ii] & 0x55) << 1;
+        maze[MAZE_SIDE*ii] = aa | bb;
+        maze[ii] = cc | dd;
+        swap(maze_count[ii][0], maze_count[MAZE_SIDE*ii][1]);
+        swap(maze_count[ii][1], maze_count[MAZE_SIDE*ii][0]);
+        swap(maze_count[ii][2], maze_count[MAZE_SIDE*ii][3]);
+        swap(maze_count[ii][3], maze_count[MAZE_SIDE*ii][2]);
+    }
 }
 
 __WEAK uint8_t get_walls(void) {
@@ -414,7 +437,7 @@ __WEAK bearing_dir_t make_turn(rotation_dir_t turn_direction) {
     return north;
 }
 
-__WEAK t_color get_color(void) {
+__WEAK color_t get_color(void) {
     return white;
 }
 
@@ -432,6 +455,7 @@ void solve_sq_maze(void) {
     //    my_coordinate.north= (data.sq_init & 0x00F00) >> 8;
     back_bearing = my_bearing = (bearing_dir_t)((data.sq_init & 0xF0000) >> 16);
     fill_data32_dma(0, (uint32_t *)maze_count, 256);
+    unsigned int first_turn = 1;
 
     draw_maze(my_coordinate, &global_path);
     init_virtual_maze();
@@ -456,6 +480,13 @@ void solve_sq_maze(void) {
         maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+back) & TURN_MASK] += 1;
         current_cell_walls = get_walls();
         recalculate |= update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
+        if (first_turn && ((current_cell_walls & (west_wall | east_wall) )!= (west_wall | east_wall))) {
+            if ((current_cell_walls & west_wall) == 0) {
+                do_transpose(my_coordinate.north);
+                my_bearing = east;
+            }
+            first_turn = 0;
+        }
         draw_maze(my_coordinate, &global_path);
 
         // варианты нахождения финиша:

@@ -15,6 +15,8 @@
 #define ENC_Right_B	(BITBAND_PERI(P10->IN, 5))
 #endif
 
+#define PERIOD_EXP_AVERAGE
+
 volatile Tach_stru_t TachLeft, TachRight;
 
 volatile unsigned int RollOverLeft = 0, RollOverRight = 0;
@@ -49,7 +51,7 @@ void tachometerRightInt(uint16_t currenttime){
         RightPeriodInc += TachRight.Period;
         TachRight.Period = RightPeriodInc / EventCountRight;
     }
-#else
+#elif defined(PERIOD_AVERAGE)
 #define LPF_FACTOR  3
     static unsigned int PeriodBuff[1 << LPF_FACTOR] = {0}, PeriodSum = 0, PeriodIndex=0;
     PeriodSum -= PeriodBuff[PeriodIndex];
@@ -57,6 +59,10 @@ void tachometerRightInt(uint16_t currenttime){
     PeriodSum +=  PeriodBuff[PeriodIndex++];
     PeriodIndex &= (1 << LPF_FACTOR) - 1;
     TachRight.Period = PeriodSum >> LPF_FACTOR;
+#elif defined(PERIOD_EXP_AVERAGE)
+    static uint32_t average = 0;
+    average = ((1*TachRight.Period + (4-1)*average) + 2) >> 2;  // 0.25 exp filter.
+    TachRight.Period = average;
 #endif
 }
 
@@ -86,13 +92,17 @@ void tachometerLeftInt(uint16_t currenttime){
         LeftPeriodInc += TachLeft.Period;
         TachLeft.Period = LeftPeriodInc / EventCountLeft;
     }
-#else
+#elif defined(PERIOD_AVERAGE)
     static unsigned int PeriodBuff[1 << LPF_FACTOR] = {0}, PeriodSum = 0, PeriodIndex=0;
     PeriodSum -= PeriodBuff[PeriodIndex];
     PeriodBuff[PeriodIndex] = TachLeft.Period;
     PeriodSum +=  PeriodBuff[PeriodIndex++];
     PeriodIndex &= (1 << LPF_FACTOR) - 1;
     TachLeft.Period = PeriodSum >> LPF_FACTOR;
+#elif defined(PERIOD_EXP_AVERAGE)
+    static uint32_t average = 0;
+    average = ((1*TachLeft.Period + (4-1)*average) + 2) >> 2;  // 0.25 exp filter.
+    TachLeft.Period = average;
 #endif
 }
 
