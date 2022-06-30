@@ -892,7 +892,7 @@ uint32_t list_values(instance_t *instance, int * none) {
 }
 
 void parse_string(instance_t *instance) {
-    unsigned int i, j, input_num, digit;
+    unsigned int i, j, input_num, digit, invert_digit;
     unsigned char *str_ptr, *in_ptr;
     str_ptr = instance->input_string;
 		instance->UART_OutString("\r\n");
@@ -920,6 +920,13 @@ void parse_string(instance_t *instance) {
         if (i == TABLE_SIZE) {
             unsigned int iserror = 0;
             input_num = 0;
+            if (*in_ptr == '-') {
+                in_ptr++;
+                invert_digit = 1;
+            } else if (*in_ptr == '+') {
+                in_ptr++;
+                invert_digit = 0;
+            } else invert_digit = 0;
             while ((*in_ptr != ' ') && (*in_ptr != '\0')) {
                 if ((*in_ptr >= '0') && (*in_ptr <= '9')) digit = *in_ptr - '0';
                 else if (*in_ptr > '@') digit = *in_ptr - 'A' + 10;
@@ -938,6 +945,7 @@ void parse_string(instance_t *instance) {
                 }
             }
             if (!iserror) {
+                if (invert_digit) input_num = -input_num;
                 if (put_on_stack(instance, (int *) input_num)) {
                     instance->UART_OutString("Stack overflow\r\n");
                     *in_ptr = '\0'; // обрываем строку
