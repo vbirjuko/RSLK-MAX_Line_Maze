@@ -24,6 +24,7 @@
 #include "Logging.h"
 #include "Timer32.h"
 #include "FRAM_Logging.h"
+#include "UART0.h"
 
 #ifdef WITH_BGX
 	#include "UART1.h"
@@ -218,13 +219,12 @@ void run_segment(speed_t runspeed, unsigned int distance) {
     }
 }
 
-
-// 180grad ~ 800
-// 180grad ~ 745
-// x*745/180
-// x*149/36
-//#define DEGREE(x)  ((x*40+4)/9)
-#define DEGREE(x)  ((x*149)/36)
+// 143mm wide ~ 449 mm length / 220mm wheel step and multiply 360 pulse = 735 pulse
+// 180grad ~ 735
+// x*735/180   /5
+// x*147/36    /3
+// x*49/12
+#define DEGREE(x)  ((x*49)/12)
 
 // Turns according to the parameter dir
 // returns 0 if OK, 1 if ERROR
@@ -1224,7 +1224,7 @@ void FreeRun(void) {
 
 
 unsigned int calculation_time;
-static unsigned int path_length[MAX_MAP_SIZE*2];
+static unsigned int path_length_table[MAX_MAP_SIZE*2];
 
 #define QUEUE_SIZE  64
 static unsigned int sort_idx[QUEUE_SIZE], sort_tail=0;
@@ -1234,7 +1234,7 @@ static unsigned int insert_val(unsigned int val, unsigned int idx) {
 
     if (++sort_tail > (QUEUE_SIZE-1)) return 1;
     for (i = sort_tail-1; i > 0; i--) {
-        if(path_length[sort_idx[i-1]] < val) {
+        if(path_length_table[sort_idx[i-1]] < val) {
             sort_idx[i] = sort_idx[i-1];
         } else break;
     }
@@ -1243,178 +1243,164 @@ static unsigned int insert_val(unsigned int val, unsigned int idx) {
 }
 
 static unsigned int extract_val(void) {
-    return sort_idx[--sort_tail];
+    if (sort_tail)return sort_idx[--sort_tail];
+    else          return sort_idx[sort_tail];
 }
 
-//#define SLICED_MAP
-void Search_Short_Way_with_turns(void) {
+int brakepath = 0;
 
-    unsigned int k, min_index, destination;
-#ifdef SLICED_MAP
-    unsigned int i, j;
-	static two_layer_map_cell_t map2d [MAX_MAP_SIZE * 2];
-#endif
-	int	distance;
-	int prev_bearing, bearing;
+__attribute__ ((ramfunc)) int TimeToRunStraight(int distance) {  // in milliseconds from millimeters.
+  int result = 0;
+  if (distance < brakepath * 2) {
+      result = sqrt(3000000LL * distance/ 11 /data.acceleration);
+  } else if ((distance + 2*brakepath) < 7159) {
+      result = 300000 * (distance + 2*brakepath)/(11 * data.maxmotor);
+  } else {
+      result = 27273 * (distance + 2*brakepath)/data.maxmotor;
+  }
+  if (result) return result;
+  else return 1;
+}
 
-	fill_data32_dma(0xffffffff, path_length, data.map_size*2);
-	data.pathlength = 0;
+void InitBrakePath(void) {
+  // Расстояние, необходимое для торможения от максимальной скорости:
+  // (220mm/100)^2 * (V^2 - v^2) / (2 * a * 400*60)
+  brakepath = (data.maxmotor*data.maxmotor)/data.acceleration*11/240000;
+  // turn length: 143mm wide * Pi / 4 = 112mm - each wheel run to turn 90 degree.
+  data.turncost = TimeToRunStraight((TRACK_WIDE * 314 + 200)/400);
+}
 
-	spi_read_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
+unsigned int Search_Short_Way_with_turns(void) {
+
+    unsigned int ii, k, min_index, destination, destination_map, break_flag = 0;
+    int   distance;
+    int prev_bearing, bearing;
+
+    fill_data32_dma(0xffffffff, (uint32_t*)path_length_table, data.map_size*2);
+    data.pathlength = 0;
+
+    InitBrakePath();
+    spi_read_eeprom(ROM_map_addr, (uint8_t *)&map, sizeof(map));
 
     // переводим в двухслойную карту
     // однозначное соответствие: каждый узел делится на два n*2 и (n*2)+1
     // между ними сегмент длиной стоимостью поворота. К четным узлам примыкают
     // меридианальные сегменты - север/юг, к нечетным широтные - запад/восток.
-    // каждый из этих сегментов удлиняется на стоимость прямого прохода узла.
+    // каждый из этих сегментов удлинняется на стоимость прямого прохода узла.
 
     benchmark_start();
-#ifdef SLICED_MAP
-    for (i = 0; i < data.map_size; i++) {
-		map2d[i*2].link[2] = i*2+1;
-		map2d[i*2].length[2] = data.turncost;
-		map2d[i*2+1].link[2] = i*2;
-		map2d[i*2+1].length[2] = data.turncost;
-		for (j = north; j <= west; j++) {
-			if ((destination = map[i].node_link[j]) == UNKNOWN) {
-				map2d[i*2 + (j&0x01)].link[(j>>1)] = UNKNOWN;
-			} else {
-				map2d[i*2 + (j&0x01)].link[(j>>1)] = (destination * 2 + (j & 0x01));			
-				map2d[destination * 2 + (j & 0x01)].link[(j>>1) ^ 0x01] = i*2 + (j & 0x01);
-				distance = (map[i].coordinate.north - map[destination].coordinate.north) +
-									 (map[i].coordinate.east  - map[destination].coordinate.east);
-				if (distance < 0) distance = -distance;
-				map2d[i*2 + (j&0x01)].length[(j>>1)] = distance + (data.crosscost);
-				map2d[destination * 2 + (j & 0x01)].length[(j>>1) ^ 0x01] = distance + (data.crosscost);
-			}
-		}
-	}
-#endif
-	while (dma_copy_busy) continue; // ждём окончания fill_dma path_length[] <= 0xFFFFFFFF
+    while (dma_copy_busy) continue; // ждём окончания fill_dma path_length[] <= 0xFFFFFFFF
     // Начинаем поиск с конца - стартовая точка финиш.
     // Причем, прибытие с любой стороны допустимо.
-    path_length[data.red_cell_nr * 2] = 0;
-    path_length[data.red_cell_nr * 2 + 1] = 0;
+    path_length_table[data.red_cell_nr * 2] = 0;
+    path_length_table[data.red_cell_nr * 2 + 1] = 0;
 
     sort_tail = 0;
-    insert_val(0, data.red_cell_nr * 2);
-    insert_val(0, data.red_cell_nr * 2 + 1);
+    if (insert_val(0, data.red_cell_nr * 2)) return 1;
+    if (insert_val(0, data.red_cell_nr * 2 + 1)) return 1;
 
-#ifdef SLICED_MAP
-    // Составляем карту высот по алгоритму Дейкстры
-    while (sort_tail) {
-        min_index  = extract_val();
-        for (k = 0; k < 3; k++) {
-            if ((i = map2d[min_index].link[k]) != UNKNOWN) {
-                distance = map2d[min_index].length[k];
-                if (path_length[i] > (path_length[min_index] + distance)) {
-                    path_length[i] = path_length[min_index] + distance;
-                    insert_val(path_length[i], i);
-                }
-            }
-        }
-    }
-#else
     // Составляем карту высот по алгоритму Дейкстры
     while (sort_tail) {
         min_index  = extract_val();
         for (k = 0; k < 2; k++) {
-            if ((destination = map[min_index/2].node_link[2*k + (min_index & 0x01)]) != UNKNOWN) {
-//                distance = map2d[min_index].length[k];
-                distance =   (map[min_index/2].coordinate.north - map[destination].coordinate.north) +
-                             (map[min_index/2].coordinate.east  - map[destination].coordinate.east);
-                if (distance < 0) distance = -distance + data.crosscost;
-                else              distance += data.crosscost;
-                destination = destination * 2 + (min_index & 0x01);
-                if (path_length[destination] > (path_length[min_index] + distance)) {
-                    path_length[destination] = path_length[min_index] + distance;
-                    insert_val(path_length[destination], destination);
+            unsigned int next_min_index = min_index;
+            while ((destination_map = map[next_min_index/2].node_link[2*k + (next_min_index & 0x01)]) != UNKNOWN) {
+                distance =  (min_index & 0x01) ? (map[min_index/2].coordinate.east  - map[destination_map].coordinate.east) :
+                        (map[min_index/2].coordinate.north - map[destination_map].coordinate.north);
+                if (distance < 0) distance = -distance;
+                distance = TimeToRunStraight(distance); // переводим миллиметры в миллисекунды.
+
+                destination = destination_map * 2 + (next_min_index & 0x01);
+                if (path_length_table[destination] > (path_length_table[min_index] + distance)) {
+                    path_length_table[destination] = path_length_table[min_index] + distance;
+                    if (insert_val(path_length_table[destination], destination)) return 1;
                 }
+                next_min_index = map[next_min_index/2].node_link[2*k + (next_min_index & 0x01)]*2 + (min_index & 0x01);
             }
         }
         distance = data.turncost;
         destination = min_index ^ 0x01;
-        if (path_length[destination] > (path_length[min_index] + distance)) {
-            path_length[destination] = path_length[min_index] + distance;
-            if (insert_val(path_length[destination], destination)) LaunchPad_Output(RED);
+        if (path_length_table[destination] > (path_length_table[min_index] + distance)) {
+            path_length_table[destination] = path_length_table[min_index] + distance;
+            if (insert_val(path_length_table[destination], destination)) return 1;
         }
     }
-#endif
-	// Теперь скатываемся вниз для создания кратчайшего пути
-	// от старта к финишу.
-	data.pathlength = 0; // указатель пути на начало
-	prev_bearing = north;  // не обязательно
-	min_index = data.green_cell_nr << 1 ;  // начинаем с точки 0
-	if (path_length[min_index] > path_length[min_index+1]) {
-		min_index++;
-		prev_bearing = east;
-	}
-#ifdef SLICED_MAP
-	while ((min_index >> 1) != data.red_cell_nr) {
-		for (k = 0; k < 3; k++	) {
-			if ((destination = map2d[min_index].link[k]) != UNKNOWN) {
-				distance = map2d[min_index].length[k];
-				if ((path_length[min_index] - distance) == path_length[destination]) {
-					if (k < 2) { // если выбрано направление из узла
-					            //  k=2 - смена широтное/меридианальное направление и в путь не записывется
-						bearing = (bearing_dir_t)((min_index & 0x01) | (k << 1));
-						path[data.pathlength] = (rotation_dir_t)(bearing - prev_bearing);
-						path[data.pathlength] &= TURN_MASK;
-						prev_bearing = bearing;
-						if ((min_index >> 1) != data.green_cell_nr) {
-						    data.pathlength++;
-	                        length[data.pathlength] = distance-data.crosscost;
-						} else {
-	                        length[data.pathlength] = distance-data.crosscost;
-						}
-					}
-					min_index = destination;
-					break;
-				}
-			}
-		}
-	}
-#else
-	// 1 line offset
-	while (path_length[min_index]) {
-	    for (k = 0; k < 3; k++) {
-	        if (k < 2) {
-                if ((destination = map[min_index/2].node_link[2*k + (min_index & 0x01)]) != UNKNOWN) {
-                    distance =   (map[min_index/2].coordinate.north - map[destination].coordinate.north) +
-                                 (map[min_index/2].coordinate.east  - map[destination].coordinate.east);
-                    if (distance < 0) distance = -distance + data.crosscost;
-                    else              distance += data.crosscost;
-                    destination = destination*2 + (min_index & 0x01);
-                    if ((path_length[min_index] - distance) == (path_length[destination])) {
-                        bearing = (bearing_dir_t)((min_index & 0x01) + 2*k);
-                        path[data.pathlength] = (rotation_dir_t)(bearing - prev_bearing);
-                        path[data.pathlength] &= TURN_MASK;
-                        prev_bearing = bearing;
-                        if ((min_index >> 1) != data.green_cell_nr) {
-                            data.pathlength++;
-                            length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно
-                        } else {
-                            length[data.pathlength] = distance-data.crosscost;  // тут проблема возможно
-                        }
-                        min_index = destination;
-                        break;
+
+    // таблица расстояний составлена - надо строить маршрут.
+    // Берём зелёную клетку и выясняем в каком направлении есть ход.
+    for (ii = north; ii <= west; ii++) {
+        if (map[data.green_cell_nr].node_link[ii] != UNKNOWN) {
+            prev_bearing = ii;
+            min_index = (data.green_cell_nr << 1) | (ii & 0x01);
+            break;
+        }
+    }
+    data.pathlength = 0; // указатель пути на начало
+
+    // Теперь скатываемся вниз для создания кратчайшего пути
+    // от старта к финишу.
+    // 1 line offset
+    while (path_length_table[min_index]) {
+        for (k = 0; k < 3; k++) {
+            if (k < 2) {
+                int step = 0;
+                unsigned int next_min_index = min_index;
+                while ((destination_map = map[next_min_index/2].node_link[2*k + (next_min_index & 0x01)]) != UNKNOWN) {
+                    distance =  (next_min_index & 0x01) ? (map[min_index/2].coordinate.east  - map[destination_map].coordinate.east) :
+                            (map[min_index/2].coordinate.north - map[destination_map].coordinate.north);
+                    if (distance < 0) distance = -distance;
+                    distance = TimeToRunStraight(distance);
+
+                    // до этого destination_map был индекс в карте,
+                    // а теперь destination индекс в таблице расстояний
+                    destination = destination_map*2 + (next_min_index & 0x01);
+                    if ((path_length_table[min_index] - distance) == (path_length_table[destination])) {
+                        unsigned int map_idx = min_index / 2;
+                        do {
+                            bearing = (bearing_dir_t)((min_index & 0x01) + 2*k);
+                            path[data.pathlength] = (rotation_dir_t)(bearing - prev_bearing);
+                            path[data.pathlength] &= TURN_MASK;
+                            prev_bearing = bearing;
+                            destination_map = map[map_idx].node_link[bearing];
+                            distance =  (next_min_index & 0x01) ? (map[map_idx].coordinate.east  - map[destination_map].coordinate.east) :
+                                                                  (map[map_idx].coordinate.north - map[destination_map].coordinate.north);
+                            if (distance < 0) distance = -distance;
+                            if ((map_idx) != data.green_cell_nr) {
+                                data.pathlength++;
+                                length[data.pathlength] = distance;  // тут проблема возможно
+                            } else {
+                                length[data.pathlength] = distance ;  // тут проблема возможно
+                            }
+                            map_idx = destination_map;
+                            min_index = destination;
+//                          break;
+                        } while (0 < step--);
+                        break_flag = 1;
                     }
+                    if (break_flag) { break; }
+                    next_min_index = map[next_min_index/2].node_link[2*k + (next_min_index & 0x01)]*2 + (min_index & 0x01);
+                    step++;
                 }
-	        } else {
-	            if ((path_length[min_index] - data.turncost) == (path_length[min_index ^ 0x01])) {
-	                min_index = min_index ^ 0x01;
-	                break;
-	            }
+                if (break_flag) { break_flag = 0; break; }
+            } else {
+                if ((path_length_table[min_index] - data.turncost) == (path_length_table[min_index ^ 0x01])) {
+                    min_index = min_index ^ 0x01;
+                    break;
+                }
             }
-	    }
-	}
-#endif
+        }
+    }
 
     path[data.pathlength++] = back;
     calculation_time= benchmark_stop();
 
     copy_data_dma(path, data.path, data.pathlength);
 	copy_data_dma((uint8_t *) length, (uint8_t *)data.length, (data.pathlength) * sizeof(length[0]));
+	    UART0_OutString("Calculation time: ");
+	    UART0_OutUDec(calculation_time);
+	    UART0_OutString("/3 us\r\n");
+
+	return 0;
 }
 
 //#ifdef PLAY

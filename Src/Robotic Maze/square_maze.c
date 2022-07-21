@@ -23,6 +23,15 @@ unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
                                bearing_dir_t prev_bearing, unsigned int open);
 unsigned int test_route(coordinate_t * my_place, bearing_dir_t my_direction);
 
+#define OLD_VARIANT
+#define SORTED_QUEUE
+
+#define QUEUE_FACTOR  9
+#define QUEUE_SIZE  (1 << QUEUE_FACTOR)
+#define QUEUE_MASK  (QUEUE_SIZE - 1)
+
+static unsigned int flood[MAZE_SIDE*MAZE_SIDE*2];
+
 #define USE_DMA
 
 #define MAX_PATH_LENGTH (MAX_MAP_SIZE * 2)
@@ -52,6 +61,7 @@ enum sides {
     south_wall = 0x04,
     west_wall  = 0x08
 };
+
 uint8_t maze[MAZE_SIDE * MAZE_SIDE], maxX, maxY;
 coordinate_t start, finish={16, 16};
 bearing_dir_t start_direction=north;
@@ -60,6 +70,7 @@ coordinate_t my_coordinate;
 uint8_t maze_count[256][4] = {{0, 0, 0, 0}};
 bearing_dir_t my_bearing;
 
+unsigned int flood_array[MAZE_SIDE * MAZE_SIDE * 2];
 
 unsigned int update_cell_walls(coordinate_t start_cell, bearing_dir_t start_direction, unsigned int start_cell_walls) {
     unsigned int cell_walls, prev_cell_walls;
@@ -244,7 +255,6 @@ void draw_maze (coordinate_t cursor, path_t * show_path) {
     update_display();
 }
 
-
 // This function decides which way to turn during the learning phase of
 // maze solving.  It uses the variable available_directions which indicate
 // whether there is an exit in each of the three directions. If no - turn back
@@ -265,7 +275,7 @@ static rotation_dir_t SelectTurn(unsigned int unavailable_directions) {
     turn_index = ((unsigned int)data.lefthand < 6u) ? data.lefthand : Rand() % 6;
 
     if (unavailable_directions != (west_wall | north_wall | east_wall)) {
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < 4; i++) {
             if (~unavailable_directions & try_sequence[turn_index][i]) {
                 //                break;
                 next_possible = my_coordinate;
@@ -279,10 +289,16 @@ static rotation_dir_t SelectTurn(unsigned int unavailable_directions) {
                     case east_wall:
                         try_bearing = (bearing_dir_t)((my_bearing + right) & TURN_MASK);
                         break;
+                    case south_wall:
+                        try_bearing = (bearing_dir_t)((my_bearing + back) & TURN_MASK);
                 }
                 update_coordinate(&next_possible, (bearing_dir_t) try_bearing);
+#ifdef OLD_VARIANT
                 result[i] = ((next_possible.north > 7) ? (next_possible.north - 8)*(next_possible.north - 8) : (7 - next_possible.north)*(7 - next_possible.north)) +
-                        ((next_possible.east  > 7) ? (next_possible.east  - 8)*(next_possible.east  - 8) : (7 - next_possible.east)*(7 - next_possible.east));
+                ((next_possible.east  > 7) ? (next_possible.east  - 8)*(next_possible.east  - 8) : (7 - next_possible.east)*(7 - next_possible.east));
+#else
+                result[i] = flood[(next_possible.north*maxY + next_possible.east)*2 + (try_bearing & 0x01)];
+#endif
             } else {
                 result[i] = 0xffffFFFF;
             }
@@ -441,6 +457,272 @@ __WEAK color_t get_color(void) {
     return white;
 }
 
+#ifdef OLD_VARIANT
+void solve_sq_maze(void) {
+    rotation_dir_t turn_direction;
+    unsigned int current_cell_walls = 0;
+    unsigned int steps, count_green, count_yellow, count_red, ii, skiplevel, unavailable;
+    //    unsigned int open_cost, close_cost;
+    unsigned int my_next_possible_bearing, back_bearing, finish_found = 0;
+    //    coordinate_t check_coordinate;
+    start.east =  (data.sq_init & 0x00F000) >> 12;
+    start.north = (data.sq_init & 0x000F00) >>  8;
+    my_coordinate = start;
+    //    my_coordinate.east = (data.sq_init & 0x0F000) >> 12;
+    //    my_coordinate.north= (data.sq_init & 0x00F00) >> 8;
+    back_bearing = my_bearing = (bearing_dir_t)((data.sq_init & 0xF0000) >> 16);
+    fill_data32_dma(0, (uint32_t *)maze_count, 256);
+    unsigned int first_turn = 1;
+
+    draw_maze(my_coordinate, &global_path);
+    init_virtual_maze();
+    data.pathlength = 0;
+    while (dma_copy_busy) continue;
+
+    do {
+        unsigned int recalculate = 0;
+        maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][my_bearing] += 1;
+        steps = make_step();
+        data.length[data.pathlength] = steps * data.cell_step;  // до поворота
+        while (steps-- > 1) {
+            current_cell_walls = (east_wall | west_wall);
+            update_coordinate(&my_coordinate, my_bearing);
+            maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][my_bearing] += 1;
+            maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+back) & TURN_MASK] += 1;
+            update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
+            draw_maze(my_coordinate, &global_path);
+            delay_us(1000000);
+        }
+        update_coordinate(&my_coordinate, my_bearing);
+        maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+back) & TURN_MASK] += 1;
+        current_cell_walls = get_walls();
+        recalculate |= update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
+        if (first_turn && ((current_cell_walls & (west_wall | east_wall) )!= (west_wall | east_wall))) {
+            if ((current_cell_walls & west_wall) == 0) {
+                do_transpose(my_coordinate.north);
+                my_bearing = east;
+            }
+            first_turn = 0;
+        }
+        draw_maze(my_coordinate, &global_path);
+
+        // варианты нахождения финиша:
+        if (current_cell_walls == (west_wall | north_wall | east_wall)) {
+            if (get_color() == red) {
+                finish = my_coordinate;
+                finish_found = 1;
+                //                break;
+            }
+        }
+        // Финиш в центре лабиринта 16х16
+        if ((my_coordinate.east == 7 || my_coordinate.east == 8)&& (my_coordinate.north == 7 || my_coordinate.north == 8)) {
+            if (!finish_found) finish = my_coordinate;
+            finish_found = 1;
+            //            break;
+        }
+        delay_us(1000000);
+
+        if (finish_found  & recalculate) {
+            recalculate = 0;
+            unsigned int opencost = search_way_simple(start, finish, (bearing_dir_t)((data.sq_init & 0xF0000) >> 16), 1);
+            if (opencost >= search_way_simple(start, finish, (bearing_dir_t)((data.sq_init & 0xF0000) >> 16), 0)) {
+                LaunchPad_Output(GREEN | BLUE);
+                break;
+            }
+        }
+        do {
+            //            luc_tremo:
+            if (((current_cell_walls & west_wall) == 0) &&
+                (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][((my_bearing + left) & TURN_MASK)] == 0))
+                    do_prediction(my_coordinate, (bearing_dir_t)((my_bearing + left) & TURN_MASK));
+            if (((current_cell_walls & east_wall) == 0) &&
+                (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][((my_bearing + right) & TURN_MASK)] == 0))
+                    do_prediction(my_coordinate, (bearing_dir_t)((my_bearing + right) & TURN_MASK));
+            if (((current_cell_walls & north_wall) == 0) &&
+                (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][my_bearing] == 0))
+                    do_prediction(my_coordinate, my_bearing);
+
+            count_green = 0; count_yellow = 0; count_red = 0;
+            unavailable = current_cell_walls;
+            for (ii = 0; ii < 4; ii++) {
+                if (unavailable & (1 << ii)) {
+                    maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+ii) & TURN_MASK] = 3;
+                    continue; // если есть стена, то эту сторону пропускаем
+                }
+                switch (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+ii) & TURN_MASK]) {
+                case 0: count_green++;  break;
+                case 1: count_yellow++; break;
+                default: count_red++;    break;
+                }
+            }
+            if (count_yellow == 3) skiplevel = 0; // есть одиночная нить пересекающая узел - возвращаемся
+            else if (count_green)  skiplevel = 1;  // оставить только зелёные проходы
+            else if (count_yellow) skiplevel = 2;  // оставить все не красные проходы
+            else goto save_map;   // если нет ни зелёного, ни желтого прохода - больше идти некуда.
+
+            if (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+left) & TURN_MASK] >= skiplevel) unavailable |= west_wall;
+            if (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+right) & TURN_MASK] >= skiplevel) unavailable |= east_wall;
+            if (maze_count[my_coordinate.north*MAZE_SIDE + my_coordinate.east][(my_bearing+straight) & TURN_MASK] >= skiplevel) unavailable |= north_wall;
+
+            turn_direction = SelectTurn(unavailable);
+            my_next_possible_bearing = my_bearing;
+            my_next_possible_bearing += turn_direction;
+            my_next_possible_bearing &= TURN_MASK;
+
+            //            if ((turn_direction == back)) {
+            //                if ((data.pathlength > 2) &&
+            //                        (data.path[data.pathlength-1] == data.path[data.pathlength-2]) &&
+            //                        ((data.path[data.pathlength-1] == left) || (data.path[data.pathlength-1] == right))) {
+            //                    if (!finish_found) finish = my_coordinate;
+            //                }
+            //            }
+
+
+            if (skiplevel != 1) {
+                // если возвращаемся назад, то давайте посмотрим, как далеко нужно идти назад.
+                // для этого возвращаемся по жёлтому пути и ищем ячейку у которой есть
+                // зелёный проход (count == 0). После чего расчитываем до той ячейки кратчайший маршрут
+                // и перемещаемся туда.
+
+                coordinate_t back_trace = my_coordinate;
+
+                back_bearing = my_bearing;
+
+                do {
+                    back_bearing += turn_direction;
+                    back_bearing &= TURN_MASK;
+                    data.path[data.pathlength++] = turn_direction;
+                    simplifyPath();
+                    do {
+                        maze_count[back_trace.north*MAZE_SIDE + back_trace.east][back_bearing] += 1;
+                        update_coordinate(&back_trace, (bearing_dir_t)back_bearing);
+                        maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+back) & TURN_MASK] += 1;
+                        current_cell_walls = maze[back_trace.north * MAZE_SIDE + back_trace.east];
+                        current_cell_walls >>= back_bearing;     // 0000 0000 000a aaab
+                        current_cell_walls &= 0x0f;
+                    } while ((current_cell_walls & (west_wall | east_wall)) == (west_wall | east_wall));
+                    if (((current_cell_walls & west_wall) == 0) && (
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][((back_bearing + left) & TURN_MASK)] == 0))
+                        do_prediction(back_trace, (bearing_dir_t)((back_bearing + left) & TURN_MASK));
+                    if (((current_cell_walls & east_wall) == 0) && (
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][((back_bearing + right) & TURN_MASK)] == 0))
+                        do_prediction(back_trace, (bearing_dir_t)((back_bearing + right) & TURN_MASK));
+                    if (((current_cell_walls & north_wall) == 0) && (
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][back_bearing] == 0))
+                        do_prediction(back_trace, (bearing_dir_t) back_bearing);
+
+                    count_green = 0; count_yellow = 0; count_red = 0;
+                    unavailable = current_cell_walls;
+                    for (ii = 0; ii < 4; ii++) {
+                        if (unavailable & (1 << ii)) {
+                            maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+ii) & TURN_MASK] = 3;
+                            continue; // если есть стена, то эту сторону пропускаем
+                        }
+                        switch (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+ii) & TURN_MASK]) {
+                        case 0: count_green++;  break;
+                        case 1: count_yellow++; break;
+                        default: count_red++;    break;
+                        }
+                    }
+                    if (count_yellow == 3) skiplevel = 0; // есть одиночная нить пересекающая узел - возвращаемся
+                    else if (count_green)  break;  // есть зелёные проходы - конец отката.
+                    else if (count_yellow) skiplevel = 2;  // оставить все не красные проходы
+                    else break; //goto save_map;   // если нет ни зелёного, ни желтого прохода - больше идти некуда.
+
+                    if (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+left) & TURN_MASK] >= skiplevel) unavailable |= west_wall;
+                    if (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+right) & TURN_MASK] >= skiplevel) unavailable |= east_wall;
+                    if (maze_count[back_trace.north*MAZE_SIDE + back_trace.east][(back_bearing+straight) & TURN_MASK] >= skiplevel) unavailable |= north_wall;
+                    turn_direction = SelectTurn(unavailable);
+                } while(1);
+                // Телепортируемся
+                draw_maze(my_coordinate, &global_path);
+                LaunchPad_Output(BLUE);
+                search_way_simple(my_coordinate, back_trace, my_bearing, 0);
+                for (ii = 0; ii < *back_path.pathlength; ii++) {
+                    make_turn((rotation_dir_t)back_path.path[ii]);
+                    my_bearing += back_path.path[ii];
+                    my_bearing &= TURN_MASK;
+                    steps = make_step();
+                    while (steps-- > 1) {
+                        update_coordinate(&my_coordinate, my_bearing);
+                        draw_maze(my_coordinate, &global_path);
+                        delay_us(1000000);
+                    }
+                    update_coordinate(&my_coordinate, my_bearing);
+                    current_cell_walls = get_walls();
+                    update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
+                    draw_maze(my_coordinate, &global_path);
+                    //                    if (current_cell_walls == (west_wall | north_wall | east_wall)) {
+                    //                        if (get_color() == red) break;
+                    //                    }
+                    delay_us(1000000);
+                }
+                //                my_bearing = make_turn((rotation_dir_t)((back_bearing - my_bearing) & TURN_MASK));
+                current_cell_walls = get_walls();
+            } else {
+                LaunchPad_Output(0);
+                break;
+            }
+        } while (1);
+
+
+        make_turn(turn_direction);
+        my_bearing += turn_direction;
+        my_bearing &= TURN_MASK;
+        //        data.path[data.pathlength] = turn_direction;
+        data.path[data.pathlength] = (my_bearing - back_bearing) & TURN_MASK;
+        data.pathlength++;
+        back_bearing = my_bearing;
+        // You should check to make sure that the path_length does not
+        // exceed the bounds of the array.
+        if (data.pathlength >= MAX_PATH_LENGTH) {
+            squareXY(0,0, 127, 63, 1);
+            update_display();
+            putstr(0, 3, "MAX PATH LENGTH", 1);
+            //            Motor_Speed(0, 0);
+            //            speed  = 0;
+            //            where_am_i = old_ret;
+            return ;//1;
+        }
+
+        // Simplify the learned path.
+        simplifyPath();
+
+
+    } while (1);
+
+
+
+
+save_map:
+    search_way_simple(my_coordinate, start, my_bearing, 0);
+    for (ii = 0; ii < *back_path.pathlength; ii++) {
+        make_turn((rotation_dir_t)back_path.path[ii]);
+        my_bearing +=  back_path.path[ii];
+        my_bearing &= TURN_MASK;
+        steps = make_step();
+        while (steps--) {
+            update_coordinate(&my_coordinate, my_bearing);
+            draw_maze(my_coordinate, &global_path);
+            if (steps) {
+                current_cell_walls = (east_wall | west_wall);
+                update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
+                delay_us(1000000);
+            }
+        }
+        draw_maze(my_coordinate, &global_path);
+        delay_us(1000000);
+    }
+
+    search_way_simple(start, finish, (bearing_dir_t)((data.sq_init & 0xF0000) >> 16), 0);
+    copy_data_dma(backpath_turn+1, data.path, backpath_size-1);
+    data.pathlength = backpath_size-1;
+    while(dma_copy_busy) WaitForInterrupt();
+    draw_maze(my_coordinate, &global_path);
+    LaunchPad_Output(GREEN);
+    return;
+}
+#else
 void solve_sq_maze(void) {
     rotation_dir_t turn_direction;
     unsigned int current_cell_walls = 0;
@@ -678,39 +960,6 @@ void solve_sq_maze(void) {
 
 
 save_map:
-////    finish = my_coordinate;
-//
-//    do {
-//        search_way_simple(start, finish, start_direction, 1);
-//        copy_data_dma(backpath_turn+1, data.path, backpath_size-1);
-//        data.pathlength = backpath_size-1;
-//        while(dma_copy_busy) WaitForInterrupt();
-////        check_coordinate = start;
-////        if (test_route(&check_coordinate, start_direction) == 0) break;
-////        draw_maze(check_coordinate, &global_path);
-////        delay_us(1000000);
-//        search_way_simple(my_coordinate, finish, my_bearing, 0);
-//        for (ii = 0; ii < *back_path.pathlength; ii++) {
-//            make_turn((rotation_dir_t)back_path.path[ii]);
-//            my_bearing +=  back_path.path[ii];
-//            my_bearing &= TURN_MASK;
-//            steps = make_step();
-//            while (steps--) {
-//                update_coordinate(&my_coordinate, my_bearing);
-//                draw_maze(my_coordinate, &global_path);
-//                if (steps) {
-//                    current_cell_walls = (east_wall | west_wall);
-//                    update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
-//                }
-//                delay_us(1000000);
-//            }
-//            current_cell_walls = get_walls();
-//            update_cell_walls(my_coordinate, my_bearing, current_cell_walls);
-//            draw_maze(my_coordinate, &global_path);
-////            delay_us(1000000);
-//        }
-//    } while (0);
-
     search_way_simple(my_coordinate, start, my_bearing, 0);
     for (ii = 0; ii < *back_path.pathlength; ii++) {
         make_turn((rotation_dir_t)back_path.path[ii]);
@@ -738,17 +987,10 @@ save_map:
     LaunchPad_Output(GREEN);
     return;
 }
-
+#endif
 /*
  * Расчет кратчайшего пути по лабиринту по алгоритму Дейкстры.
  */
-#define SORTED_QUEUE
-
-#define QUEUE_FACTOR  9
-#define QUEUE_SIZE  (1 << QUEUE_FACTOR)
-#define QUEUE_MASK  (QUEUE_SIZE - 1)
-
-static unsigned int flood[MAZE_SIDE*MAZE_SIDE*2];
 
 #ifdef SORTED_QUEUE
 static unsigned int sort_idx[QUEUE_SIZE], sort_tail=0;
@@ -770,6 +1012,10 @@ static unsigned int extract_val(void) {
     if (sort_tail)  sort_tail--;
     return sort_idx[sort_tail];
 }
+
+static void init_queue(void) {
+    sort_tail = 0;
+}
 #else
 #define insert_val(x, y)  floodqueue[queue_wr++] = y; queue_wr &= QUEUE_MASK;
 #define extract_val()     floodqueue[queue_rd++]; queue_rd &= QUEUE_MASK;
@@ -780,19 +1026,18 @@ unsigned int floodqueue[QUEUE_SIZE], queue_wr = 0, queue_rd = 0;
 const unsigned int cost_table[] = {0, 424, 749, 1024, 1265, 1484, 1685, 1872, 2048, 2214, 2372, 2523, 2668, 2807, 2941, 3072, 3198};
 //const unsigned int cost_table[] = {0, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500, 4800};
 
+struct {
+    unsigned int north;
+    unsigned int east;
+    unsigned int south;
+    unsigned int west;
+} wall;
 
 unsigned int search_way_simple(coordinate_t start, coordinate_t finish,
                                bearing_dir_t prev_bearing, unsigned int open){
     unsigned int distance = 0, pos_idx, cost = 0;
     unsigned int next_virtual_cell, ii;
     coordinate_t ptr = finish;
-
-    struct {
-        unsigned int north;
-        unsigned int east;
-        unsigned int south;
-        unsigned int west;
-    } wall;
 
     fill_data32_dma(0xffffffff, flood, MAZE_SIDE*MAZE_SIDE*2);
 
@@ -967,3 +1212,70 @@ unsigned int test_route(coordinate_t * my_place, bearing_dir_t my_direction) {
     *my_place = last_unknown;
     return has_unknown;
 }
+
+void flood_maze(unsigned int to_finish_cell) {
+    unsigned int pos_idx, distance, ii, jj;
+
+    fill_data32_dma(0xFFFFFFFF, flood, sizeof(flood)/sizeof(flood[0]));
+    init_queue();
+
+    wall.north = 0x10;
+    wall.east  = 0x20;
+    wall.south = 0x40;
+    wall.west  = 0x80;
+
+    while (dma_copy_busy) continue;
+    if (to_finish_cell) {
+        for (ii=7; ii <= 8; ii++) {
+            for (jj = 7; jj <= 8; jj++) {
+                flood[ii*maxX + jj*2] = 0;      insert_val(0, ii*maxX + jj*2);
+                flood[ii*maxX + jj*2 + 1] = 0;  insert_val(0, ii*maxX + jj*2 + 1);
+            }
+        }
+    } else {
+        flood[0] = 0; insert_val(0, 0);
+        flood[1] = 0; insert_val(0, 1);
+    }
+    while(sort_tail) {
+        pos_idx = extract_val();
+        if (pos_idx > (MAZE_SIDE*MAZE_SIDE*2)-1) {
+            LaunchPad_LED(1);
+            continue;
+        }
+
+        if (pos_idx & 0x01) {
+            distance = flood[pos_idx] + data.stepcost;
+            if (((maze[pos_idx/2] & wall.east) == 0) && (flood[pos_idx+2] > distance)) {
+                flood[(pos_idx+2)] = distance;
+                if (insert_val(distance, pos_idx + 2)) LaunchPad_Output(RED);
+                distance = flood[pos_idx] + data.stepcost;
+            }
+            distance = flood[pos_idx] +data.stepcost;
+            if (((maze[pos_idx/2] & wall.west) == 0) && (flood[pos_idx-2] > distance)) {
+                flood[(pos_idx-2)] = distance;
+                if (insert_val(distance, pos_idx - 2)) LaunchPad_Output(RED);
+                distance = flood[pos_idx] + data.stepcost;
+            }
+        } else {
+            distance = flood[pos_idx] + data.stepcost;
+            if (((maze[pos_idx/2] & wall.north) == 0) && (flood[pos_idx + MAZE_SIDE*2] > distance)) {
+                flood[pos_idx + MAZE_SIDE*2] = distance;
+                if (insert_val(distance, pos_idx + MAZE_SIDE*2)) LaunchPad_Output(RED);
+                distance = flood[pos_idx] + data.stepcost;
+            }
+            distance = flood[pos_idx] + data.stepcost;
+            if (((maze[pos_idx/2] & wall.south) == 0) && (flood[pos_idx - MAZE_SIDE*2] > distance)) {
+                flood[pos_idx - MAZE_SIDE*2] = distance;
+                if (insert_val(distance, pos_idx - MAZE_SIDE*2)) LaunchPad_Output(RED);
+                distance = flood[pos_idx] + data.stepcost;
+            }
+        }
+        distance = flood[pos_idx]+data.turncost;
+        if (flood[pos_idx ^ 0x01] > distance) {
+            flood[pos_idx ^ 0x01] = distance;
+            if (insert_val(distance, pos_idx ^ 0x01)) LaunchPad_Output(RED);
+        }
+    }
+
+}
+

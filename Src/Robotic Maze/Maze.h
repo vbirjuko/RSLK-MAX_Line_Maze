@@ -48,7 +48,7 @@ extern const unsigned int turn_sequence[][3];
 unsigned int solveMaze(unsigned int explore_mode);
 void BrakeTest(void);
 void FreeRun(void);
-void Search_Short_Way_with_turns(void);
+unsigned int Search_Short_Way_with_turns(void);
 unsigned int PlayMaze(void);
 
 extern unsigned int calculation_time;

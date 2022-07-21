@@ -128,7 +128,9 @@ SECTIONS
 
 #ifdef  __TI_COMPILER_VERSION__
 #if     __TI_COMPILER_VERSION__ >= 15009000
-    .TI.ramfunc : {} load=MAIN, run=SRAM_CODE, table(BINIT)
+    .TI.ramfunc : {
+	    --library=rts*.lib<*sqrt*.obj>(.text)
+   } load=MAIN, run=SRAM_CODE, table(BINIT)
 #endif
 #endif
 }
