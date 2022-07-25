@@ -753,6 +753,21 @@ uint32_t search_way(instance_t *instance, int * none) {
     return 0;
 }
 
+uint32_t validate_config(instance_t *instance, int * none) {
+    UNUSED(none);
+
+    unsigned int validation_error_code = (config_validate());
+    if (validation_error_code  & 0x01) {
+      instance->UART_OutString("Data validation: Cell step/Guard error. Corrected.\r\n");
+    }
+    if (validation_error_code & 0x02) {
+      instance->UART_OutString("Data validation: Vbat error.\r\n");
+    }
+    if (validation_error_code & 0x04) {
+      instance->UART_OutString("Data validation: Min speed/sensor offset error. Corrected.\r\n");
+    }
+    return 0;
+}
 
 typedef struct {
     char CmdName[12]; // name of command
@@ -827,6 +842,7 @@ const Cmd_t Table[]={
     {"Length_tab",      &put_on_stack,  data.length},
     {"Watermark",       &put_on_stack, &data.log_watermark},
     {"searchWay",       &search_way, NULL},
+    {"validate",        &validate_config, NULL},
     {"save_conf",       &write_eeprom_config, NULL},
     {"dump",            &dump_mem,  NULL},
     {"dump_log",        &dump_log, (int *) 0},

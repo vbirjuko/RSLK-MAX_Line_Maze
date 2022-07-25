@@ -251,15 +251,35 @@ void Configure(void) {
 	Motor_Speed(0, 0);
 	do_menu((menuitem_t*) menu_item, ((sizeof(menu_item)/sizeof(menu_item[0]))-1));
 //	data_ptr = (uint32_t*) &data;
-	if (config_validate()) {
+
+	unsigned int validation_error_code = (config_validate());
+	  if (validation_error_code  & 0x01) {
+	      squareXY(0, 0, 127, 63, 0);
+	      update_display();
+	      putstr(0, 2, "data validation", 0);
+	      putstr(0, 3, "Cell step/Guard", 0);
+	      putstr(0, 4, "    error.     ", 0);
+	      putstr(0, 5, "  Corrected.   ", 0);
+	      while (kbdread() != KEY_DOWN) continue;
+	  }
+	  if (validation_error_code & 0x02) {
 	      squareXY(0, 0, 127, 63, 0);
 	      update_display();
 	      putstr(0, 3, "data validation", 0);
-	      putstr(0, 4, "    error.", 0);
-	      putstr(0, 5, "  Corrected.", 0);
+	      putstr(0, 4, "  Vbat error.  ", 0);
 	      while (kbdread() != KEY_DOWN) continue;
-	}
-	data.crc32 = calc_crc32((uint8_t*)&data, sizeof(data)-4);
+	  }
+	  if (validation_error_code & 0x04) {
+	      squareXY(0, 0, 127, 63, 0);
+	      update_display();
+	      putstr(0, 2, "data validation", 0);
+	      putstr(0, 3, "Min speed/Offs.", 0);
+	      putstr(0, 4, "    error.     ", 0);
+	      putstr(0, 5, "  Corrected.   ", 0);
+	      while (kbdread() != KEY_DOWN) continue;
+	  }
+
+	  data.crc32 = calc_crc32((uint8_t*)&data, sizeof(data)-4);
 	spi_write_eeprom(EEPROM_COPY_ADDRESS, (uint8_t*) &data, sizeof(data));  // сначала записываем резерв
 	spi_write_eeprom(EEPROM_CONFIG_ADDRESS, (uint8_t*) &data, sizeof(data));	// теперь, нормальный вариант.
 	Reflectance_Init_with_Timer(data.threshold);

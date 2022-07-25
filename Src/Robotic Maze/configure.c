@@ -11,6 +11,7 @@
 #include "main.h"
 #include "display.h"
 #include "fonts_oled.h"
+#include "math.h"
 
 #define 	INVERT	(1u<<7)
 #ifdef SSD1306
@@ -381,13 +382,20 @@ void edit_path(void) {
 	do_menu((menuitem_t *)segments, menu_length);
 }
 
-unsigned int config_validate(void) {
+__attribute__ ((ramfunc)) unsigned int config_validate(void) {
   unsigned int result = 0;
   if (data.cell_step) {
       if ((data.cell_step*3/4) < data.tolerance) {
           data.tolerance = data.cell_step*3/4;
-          result = 1;
+          result |= 1;
       }
+  }
+  if (data.low_battery_level * data.volt_calibr >= 10000) {
+      result |= 2;
+  }
+  if (data.sensor_offset < (data.minspeed*data.minspeed)/data.acceleration*11/240000) {
+      data.minspeed = sqrt(data.sensor_offset*data.acceleration*240000LL/11);
+      result |= 4;
   }
   return result;
 }
