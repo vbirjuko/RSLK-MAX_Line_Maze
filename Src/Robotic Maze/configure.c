@@ -387,15 +387,15 @@ __attribute__ ((ramfunc)) unsigned int config_validate(void) {
   if (data.cell_step) {
       if ((data.cell_step*3/4) < data.tolerance) {
           data.tolerance = data.cell_step*3/4;
-          result |= 1;
+          result |= (1 << 0);
       }
   }
   if (data.low_battery_level * data.volt_calibr >= 10000) {
-      result |= 2;
+      result |= (1 << 1);
   }
-  if (data.sensor_offset < (data.minspeed*data.minspeed)/data.acceleration*11/240000) {
-      data.minspeed = sqrt(data.sensor_offset*data.acceleration*240000LL/11);
-      result |= 4;
+  if ((data.sensor_offset*100) < ((((long long)(data.minspeed*data.minspeed)*121)+(data.acceleration/2))/data.acceleration+12000)/24000) {
+      data.minspeed = sqrt(data.sensor_offset*data.acceleration*2400000LL/121);
+      result |= (1 << 2);
   }
   return result;
 }
