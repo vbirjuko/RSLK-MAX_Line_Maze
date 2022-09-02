@@ -138,10 +138,10 @@ void Motor_Left(uint16_t leftDuty, uint16_t rightDuty);
  */
 void Motor_Backward(uint16_t leftDuty, uint16_t rightDuty);
 
-void Motor_Speed (int16_t left, int16_t right);
+void Motor_Speed (int left, int right);
 void Motor_Enable(void);
 void Motor_Disable(void);
 
-extern volatile int16_t XstartL, XstartR, RealSpeedL, RealSpeedR;
+extern volatile int XstartL, XstartR, RealSpeedL, RealSpeedR;
 
 #endif /* MOTOR_H_ */

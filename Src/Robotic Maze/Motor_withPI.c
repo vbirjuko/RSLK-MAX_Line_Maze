@@ -1,6 +1,7 @@
 #include <msp.h>
 #include "configure.h"
 #include "Tachometer.h"
+#include "Motor.h"
 #include "Blinker.h"
 #include "CortexM.h"
 #include "resources.h"
@@ -41,7 +42,7 @@ void Motor_PWM (int16_t left, int16_t right) {
 }
 
 Tach_stru_t Left, Right;
-volatile int16_t XstartL  = 0, XstartR = 0, RealSpeedL, RealSpeedR;
+volatile int XstartL  = 0, XstartR = 0, RealSpeedL, RealSpeedR;
 
 void Controller(void){
 
@@ -173,7 +174,7 @@ void TA0_N_IRQHandler(void){
     }
 }
 
-void Motor_Speed(int16_t left, int16_t right) {
+void Motor_Speed(int left, int right) {
     __disable_irq();
 	XstartL = left;
 	XstartR = right;

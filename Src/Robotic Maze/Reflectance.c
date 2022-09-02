@@ -306,6 +306,8 @@ uint8_t Reflectance_End(void){
     return result;
 }
 */
+
+
 int line_error(unsigned int first_sensor, unsigned int last_sensor) {
     const int W[] = {329, 235, 141, 47, -47, -141, -235, -329};
     if ((first_sensor == 256) || (last_sensor == 256)) return 0;
