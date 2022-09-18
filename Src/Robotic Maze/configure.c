@@ -393,8 +393,9 @@ __attribute__ ((ramfunc)) unsigned int config_validate(void) {
   if (data.low_battery_level * data.volt_calibr >= 10000) {
       result |= (1 << 1);
   }
-  if ((data.sensor_offset*100) < ((((long long)(data.minspeed*data.minspeed)*121)+(data.acceleration/2))/data.acceleration+12000)/24000) {
-      data.minspeed = sqrt(data.sensor_offset*data.acceleration*2400000LL/121);
+  // brakepath = (long long)data.maxmotor*data.maxmotor/data.acceleration/(10000*4*2);
+  if ((data.sensor_offset*100) < (((long long)(data.minspeed*data.minspeed)+(data.acceleration/2))/data.acceleration + 400)/(400*2)) {
+      data.minspeed = sqrt(data.sensor_offset*data.acceleration*(10000*4*2));
       result |= (1 << 2);
   }
   return result;

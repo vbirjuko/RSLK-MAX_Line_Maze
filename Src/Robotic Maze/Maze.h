@@ -52,6 +52,9 @@ unsigned int Search_Short_Way_with_turns(void);
 unsigned int PlayMaze(void);
 
 extern unsigned int calculation_time;
+extern int brakepath;
+int TimeToRunStraight(int distance);
+void InitBrakePath(void);
 
 #define ABS(x)  (((x) < 0) ? (-(x)) : (x))
 

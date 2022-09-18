@@ -10,10 +10,10 @@
 
 // Define robot configuration
 // RSLK_MAX - mandatory. If not defined use classic RSLK configuration
-// which may conflict with other modules
+// which may conflict with new modules
 #define RSLK_MAX
 
-// Used display.  Alter to SH1106 if necessary
+// Display in use.  Alter to SH1106 if necessary
 #define SSD1306
 
 // display orientation. Define if display show picture in wrong orientation
@@ -41,6 +41,12 @@
 
 // Ширина колеи робота для вычисления поворотов
 #define TRACK_WIDE      (143)
+
+// 220mm per 360 tick of two wheels.
+// 220 mm  ~ 720  / 20
+//      11 ~ 36
+#define STEPS_TO_MM(X)    ((X) * 11 / 36)
+#define MM_TO_STEPS(X)    ((X) * 36 / 11)
 
 // IRQ priorities
 

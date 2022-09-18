@@ -24,7 +24,7 @@
 #define DIRECTION_RIGHT	RIGHT
 #endif
 
-void Motor_PWM (int16_t left, int16_t right) {
+void Motor_PWM (int left, int right) {
     if (left < 0) {
         BITBAND_PERI(DIRECTION_PORT->OUT, DIRECTION_LEFT) = 1;
         TIMER_A0->CCR[4] = -left;
@@ -50,11 +50,12 @@ void Controller(void){
     Tach_stru_t Left, Right;
     static int XprimeL, ErrorL, UIL, UPR, UR;
     static int XprimeR, ErrorR, UIR, UPL, UL;
-		unsigned int backlight = 0;
+	unsigned int backlight = 0;
 
-		Tachometer_Get(&Left, &Right);
-		XprimeL = (Left.Period)  ? 200000000/Left.Period  : 200000000/262144;
-		XprimeR = (Right.Period) ? 200000000/Right.Period : 200000000/262144;
+    Tachometer_Get(&Left, &Right);
+    XprimeL = (Left.Period)  ? 733333333/Left.Period  : 733333333/262144;
+    XprimeR = (Right.Period) ? 733333333/Right.Period : 733333333/262144;
+
     if (Left.Dir == REVERSE) XprimeL = -XprimeL;
     if (Right.Dir == REVERSE) XprimeR = -XprimeR;
 
@@ -88,13 +89,14 @@ void Controller(void){
     if (XstartL == 0 && Left.Dir  == STOPPED) UIL = UL = 0, backlight |= FR_LEFT;
     if (XstartR == 0 && Right.Dir == STOPPED) UIR = UR = 0, backlight |= FR_RGHT;
 
-		if (UL < 0) backlight |= BK_LEFT;
-		if (UR < 0) backlight |= BK_RGHT;
+    if (UL < 0) backlight |= BK_LEFT;
+    if (UR < 0) backlight |= BK_RGHT;
+
 #ifdef BLINKER_MOTOR
-		Blinker_Output(backlight);
+    Blinker_Output(backlight);
 #endif
 
-		Motor_PWM(UL, UR);
+	Motor_PWM(UL, UR);
 }
 
 void Motor_Init(void){

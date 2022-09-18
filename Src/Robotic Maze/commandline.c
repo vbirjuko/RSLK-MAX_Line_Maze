@@ -769,6 +769,22 @@ uint32_t validate_config(instance_t *instance, int * none) {
     return 0;
 }
 
+uint32_t time_to_run_straight(instance_t *instance, int *none) {
+  UNUSED(none);
+  int32_t val;
+  if (instance->stack_idx == 0) return 1;
+  val = instance->stack[instance->stack_idx - 1];
+  instance->stack[instance->stack_idx - 1] = TimeToRunStraight(val);
+  return 0;
+}
+
+uint32_t init_brakepath(instance_t *instance, int *none) {
+  UNUSED (none);
+  UNUSED (instance);
+  InitBrakePath();
+  return 0;
+}
+
 typedef struct {
     char CmdName[12]; // name of command
     uint32_t (*fnctPt)(instance_t *, int *); // to execute this command
@@ -853,6 +869,8 @@ const Cmd_t Table[]={
     {"fram_rdsr",       &fram_rdsr, NULL},
     {"fram_wrsr",       &fram_wrsr, NULL},
     {"show_path",       &show_path, NULL},
+    {"time_to_run",     &time_to_run_straight, NULL},
+    {"init_brkpth",     &init_brakepath, NULL},
     {"list",            &list_values, NULL},
 	{"words",           &list_cmd, NULL},
 };

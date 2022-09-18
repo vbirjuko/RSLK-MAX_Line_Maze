@@ -1,15 +1,15 @@
 decimal
 Threshold     800 swap !
-MAXspeed      17000 swap !
-MINspeed      10000 swap !
-MAXmotor      17000 swap !
-TurnSpeed     6000 swap !
-Accelerat     100 swap !
+MAXspeed      17000 366 * 100 / swap !
+MINspeed      10000 366 * 100 / swap !
+MAXmotor      17000 366 * 100 / swap !
+TurnSpeed     6000 366 * 100 / swap !
+Accelerat     100 366 * 100 / swap !
 K*error       8 swap !
 K*de/dt       100 swap !
 Kintegral     0 swap !
-MotorKprop    135 swap !
-MotorKint     128 swap !
+MotorKprop    135 100 * 366 / swap !
+MotorKint     128 100 * 366 / swap !
 OnWay         100 swap !
 RunNumber     0 swap !
 PathLength    1 swap !
@@ -17,7 +17,6 @@ MapSize       9 swap !
 StartPoint    0 swap !
 EndPoint      8 swap !
 IRlevel       31 swap !
-map           0 swap !
 LeftHand      6 swap !
 ColorRed      780 swap !
 ColorGreen    1024 swap !

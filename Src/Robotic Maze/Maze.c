@@ -36,8 +36,9 @@ rotation_dir_t path[MAX_PATH_LENGTH];
 int length[MAX_PATH_LENGTH];
 
 // 220mm per 360 tick of two wheels.
-#define CURRENT_DISTANCE	((LeftSteps + RightSteps) * 11 / 36)
-#define MIN_RPM (1500)
+//#define CURRENT_DISTANCE	((LeftSteps + RightSteps) * 11 / 36)
+#define CURRENT_DISTANCE    STEPS_TO_MM(LeftSteps + RightSteps)
+#define MIN_RPM (733333333/65536/2)
 
 map_cell_t map[MAX_MAP_SIZE];
 uint8_t	where_am_i = 0, old_ret = 0;
@@ -91,11 +92,11 @@ void run_segment(speed_t runspeed, unsigned int distance) {
         int brakepath1, brakepath2;
         if (maxspeed >=  data.minspeed) {
             // Расстояние, необходимое для торможения, если максимальная скорость не набирается:
-            //  (220mm/100)^2 * (V^2 - v^2) / (4 * a * 400*60)  + distance/2
-            brakepath1 = (long long)(speed + data.minspeed)*(speed - data.minspeed) * 121 / data.acceleration / 2400000 + distance/2;
+            //  (1mm/100)^2 * (V^2 - v^2) / (4 * a * 400fps/100)  + distance/2
+            brakepath1 = (long long)(speed + data.minspeed)*(speed - data.minspeed)/ data.acceleration / 160000 + distance/2;
             // Расстояние, необходимое для торможения от максимальной скорости:
-            // (220mm/100)^2 * (V^2 - v^2) / (2 * a * 400*60)
-            brakepath2 = (long long)(maxspeed + data.minspeed)*(maxspeed - data.minspeed) * 121 / data.acceleration / 1200000;
+            // (1mm/100)^2 * (V^2 - v^2) / (2 * a * 400fps/100)
+            brakepath2 = (long long)(maxspeed + data.minspeed)*(maxspeed - data.minspeed) / data.acceleration / 80000;
             // используем вариант с самым коротким тормозным путём
             if ((brakepath1 < brakepath2) && (brakepath1 >= 0)) {
                 slowdistance = CURRENT_DISTANCE + distance - data.sensor_offset - brakepath1;
@@ -245,6 +246,20 @@ unsigned int turn(rotation_dir_t dir) {
         turn_dir = (last_turn == left) ? right : left;
     }
 
+    stop_difference = MM_TO_STEPS((degree == 180) ? (TRACK_WIDE * 135 * 314 / 100 / 360) : (TRACK_WIDE *  45 * 314 / 100 / 360));
+    fail_difference = MM_TO_STEPS((degree == 180) ? (TRACK_WIDE * 360 * 314 / 100 / 360) : (TRACK_WIDE * 135 * 314 / 100 / 360));
+    slow_difference = (LeftSteps - RightSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(60));
+
+    {
+        int brakepath = (long long)data.maxmotor*data.maxmotor/data.acceleration/(10000*4*2);
+        int circle_length = degree * TRACK_WIDE * 314 / 100 / 360;
+        if ((brakepath * 2) > circle_length) {
+            slow_difference = MM_TO_STEPS(circle_length/2);
+        } else {
+            slow_difference = MM_TO_STEPS(brakepath);
+        }
+    }
+
     switch (turn_dir) {
         case left:      // turn left
             speed = 0;
@@ -253,7 +268,6 @@ unsigned int turn(rotation_dir_t dir) {
             slow_difference = (RightSteps - LeftSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(60));
             fail_difference = (RightSteps - LeftSteps) + ((degree == 180) ? DEGREE(360) : DEGREE(135));
             do {
-//				Motor_Speed(-data.turnspeed, data.turnspeed);
                 count = 0;
                 while(count < 2) {
                     if (photo_data_ready ) {
@@ -292,7 +306,6 @@ unsigned int turn(rotation_dir_t dir) {
             slow_difference = (LeftSteps - RightSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(60));
             fail_difference = (LeftSteps - RightSteps) + ((degree == 180) ? DEGREE(360) : DEGREE(135));
             do {
-//				Motor_Speed(data.turnspeed, -data.turnspeed);
                 count = 0;
                 while(count < 2) {
                     if (photo_data_ready ) {
@@ -1249,15 +1262,22 @@ static unsigned int extract_val(void) {
 }
 
 int brakepath = 0;
-
+/*
+* Функция вычисляет время необходимое для проезда заданного расстояния
+* Расстояник задаётся в миллиметрах, результат в миллисекундах
+*/
 __attribute__ ((ramfunc)) int TimeToRunStraight(int distance) {  // in milliseconds from millimeters.
   int result = 0;
   if (distance < brakepath * 2) {
-      result = sqrt(3000000LL * distance/ 11 /data.acceleration);
-  } else if ((distance + 2*brakepath) < 7159) {
-      result = 300000 * (distance + 2*brakepath)/(11 * data.maxmotor);
+      // t = sqrt(4*S/a)
+      // V = 0.01 mm * speed per second = 0.01mm /1000ms =
+      // => speed / 100 000 mm/ms
+      // a = 0.01 mm * 400 * data.acceleration = 4*data.acceleration mm/s^2 =
+      // = 4*10^-6 * data.accel mm/ms^2
+      result = sqrt(1000000LL*distance/data.acceleration);
   } else {
-      result = 27273 * (distance + 2*brakepath)/data.maxmotor;
+      // t = (S + Sbr) / Vmax
+      result = 100000LL*(distance + 2*brakepath)/(data.maxmotor);
   }
   if (result) return result;
   else return 1;
@@ -1265,8 +1285,10 @@ __attribute__ ((ramfunc)) int TimeToRunStraight(int distance) {  // in milliseco
 
 void InitBrakePath(void) {
   // Расстояние, необходимое для торможения от максимальной скорости:
-  // (220mm/100)^2 * (V^2 - v^2) / (2 * a * 400*60)
-  brakepath = (long long)data.maxmotor*data.maxmotor*121/data.acceleration/2400000;
+  // (V^2 - v^2) / (2 * a)
+    // V = 0.01 mm * speed
+    // a = 0.01 mm * 400 * data.acceleration
+  brakepath = (long long)data.maxmotor*data.maxmotor/data.acceleration/(10000*4*2);
   // turn length: 143mm wide * Pi / 4 = 112mm - each wheel run to turn 90 degree.
   data.turncost = TimeToRunStraight((TRACK_WIDE * 314 + 200)/400);
 }
