@@ -38,9 +38,9 @@ those of the authors and should not be interpreted as representing official
 policies, either expressed or implied, of the FreeBSD Project.
 */
 
+#include <Blinker.h>
 #include <stdint.h>
 #include "msp.h"
-#include "blinker.h"
 // Blinker LEDS
 // Front right P8.5 Yellow LED
 // Front left  P8.0 Yellow LED

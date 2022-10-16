@@ -2,7 +2,7 @@
 #include "msp.h"
 #include "main.h"
 #include "keyboard.h"
-#include "Adafruit_ssd1306.h"
+#include "Adafruit_SSD1306.h"
 #include "display.h"
 #include "i2c_drv.h"
 #include "BumpInt.h"

@@ -248,11 +248,10 @@ unsigned int turn(rotation_dir_t dir) {
 
     stop_difference = MM_TO_STEPS((degree == 180) ? (TRACK_WIDE * 135 * 314 / 100 / 360) : (TRACK_WIDE *  45 * 314 / 100 / 360));
     fail_difference = MM_TO_STEPS((degree == 180) ? (TRACK_WIDE * 360 * 314 / 100 / 360) : (TRACK_WIDE * 135 * 314 / 100 / 360));
-    slow_difference = (LeftSteps - RightSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(60));
 
     {
-        int brakepath = (long long)data.maxmotor*data.maxmotor/data.acceleration/(10000*4*2);
-        int circle_length = degree * TRACK_WIDE * 314 / 100 / 360;
+//        int circle_length = degree * TRACK_WIDE * 314 / 100 / 360;
+        int circle_length = (degree == 180) ? (180 * TRACK_WIDE * 314)+(100*360/2) / (100 * 360) : (90 * TRACK_WIDE * 314)+(100*360/2) / (100 * 360);
         if ((brakepath * 2) > circle_length) {
             slow_difference = MM_TO_STEPS(circle_length/2);
         } else {
@@ -264,9 +263,9 @@ unsigned int turn(rotation_dir_t dir) {
         case left:      // turn left
             speed = 0;
             last_turn = left;
-            stop_difference = (RightSteps - LeftSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(45));
-            slow_difference = (RightSteps - LeftSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(60));
-            fail_difference = (RightSteps - LeftSteps) + ((degree == 180) ? DEGREE(360) : DEGREE(135));
+            stop_difference += (RightSteps - LeftSteps);
+            slow_difference += (RightSteps - LeftSteps);
+            fail_difference += (RightSteps - LeftSteps);
             do {
                 count = 0;
                 while(count < 2) {
@@ -302,9 +301,9 @@ unsigned int turn(rotation_dir_t dir) {
         case right:  // Turn right.
             speed = 0;
             last_turn = right;
-            stop_difference = (LeftSteps - RightSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(45));
-            slow_difference = (LeftSteps - RightSteps) + ((degree == 180) ? DEGREE(135) : DEGREE(60));
-            fail_difference = (LeftSteps - RightSteps) + ((degree == 180) ? DEGREE(360) : DEGREE(135));
+            stop_difference += (LeftSteps - RightSteps);
+            slow_difference += (LeftSteps - RightSteps);
+            fail_difference += (LeftSteps - RightSteps);
             do {
                 count = 0;
                 while(count < 2) {
@@ -465,6 +464,7 @@ unsigned int solveMaze(unsigned int explore_mode) {
 	int segment_length, start_position;
 
 	where_am_i = Entrance;
+	InitBrakePath();
 
 #if FRAM_SIZE == 0
 	data_log_init();
