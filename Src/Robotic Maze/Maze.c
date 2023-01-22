@@ -210,11 +210,11 @@ void run_segment(speed_t runspeed, unsigned int distance) {
             left_speed = speed+(result*speed)/8192; // speed*(1+result/nom_speed)
             right_speed = speed-(result*speed)/8192;
 
-            if (left_speed > data.maxmotor) left_speed = data.maxmotor;
-            else if (left_speed < -data.maxmotor) left_speed = -data.maxmotor;
-
-            if (right_speed > data.maxmotor) right_speed = data.maxmotor;
-            else if (right_speed < -data.maxmotor) right_speed = -data.maxmotor;
+//            if (left_speed > data.maxmotor) left_speed = data.maxmotor;
+//            else if (left_speed < -data.maxmotor) left_speed = -data.maxmotor;
+//
+//            if (right_speed > data.maxmotor) right_speed = data.maxmotor;
+//            else if (right_speed < -data.maxmotor) right_speed = -data.maxmotor;
 
             Motor_Speed(left_speed, right_speed);
         }
@@ -246,9 +246,11 @@ unsigned int turn(rotation_dir_t dir) {
         turn_dir = (last_turn == left) ? right : left;
     }
 
+#define DEGREE_TO_STEPS(X) ((TRACK_WIDE*314L*36L*(X)+(11L*360*100/2))/(11L*360*100))
+
     stop_difference = MM_TO_STEPS((degree == 180) ? (TRACK_WIDE * 135 * 314 / 100 / 360) : (TRACK_WIDE *  45 * 314 / 100 / 360));
     fail_difference = MM_TO_STEPS((degree == 180) ? (TRACK_WIDE * 360 * 314 / 100 / 360) : (TRACK_WIDE * 135 * 314 / 100 / 360));
-
+//    slow_difference = ((degree == 180) ? DEGREE_TO_STEPS(120) : DEGREE_TO_STEPS(60));
     {
 //        int circle_length = degree * TRACK_WIDE * 314 / 100 / 360;
         int circle_length = (degree == 180) ? (180 * TRACK_WIDE * 314)+(100*360/2) / (100 * 360) : (90 * TRACK_WIDE * 314)+(100*360/2) / (100 * 360);
